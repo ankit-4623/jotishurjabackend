@@ -2,6 +2,7 @@ import express from "express";
 import dotenv from "dotenv";
 import cors from "cors";
 import productRoute from "./route/productRoute.js";
+import AdressCart from './route/addressRoute.js'
 import connectDB from "./config/db.js";
 import userRoute from "./route/userRoute.js";
 import cookieParser from "cookie-parser";
@@ -20,6 +21,7 @@ app.use(express.urlencoded({ extended: true }));
 app.use("/api/users", userRoute);
 app.use("/api/products", productRoute);
 app.use("/api/carts", Usercart);
+app.use("/api/address", AdressCart);
 
 app.listen(PORT, () => {
   connectDB();
