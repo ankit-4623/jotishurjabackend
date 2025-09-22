@@ -2,14 +2,35 @@ import { deleteFromCloudinary } from "../config/multer.js";
 import { extractPublicIdFromUrl } from "../helper/helperfunction.js";
 import Product from "../model/productModel.js";
 
-export const getAllProducts = (req, res) => {
-  // Logic to get all products
-  res.send("List of products");
+export const getAllProducts = async (req, res) => {
+  try {
+    const products = await Product.find();
+
+    if (!products || products.length === 0) {
+      return res
+        .status(404)
+        .json({ success: false, message: "No products found" });
+    }
+    res.status(200).json({ success: true, products });
+  } catch (error) {
+    console.log(error);
+    res.status(500).json({ success: false, message: "Server Error" });
+  }
 };
 
-export const getProductById = (req, res) => {
-  // Logic to get a product by ID
-  res.send(`Product details for ID: ${req.params.id}`);
+export const getProductById = async (req, res) => {
+  try {
+    const product = await Product.findById(req.params.id);
+    if (!product) {
+      return res
+        .status(404)
+        .json({ success: false, message: "Product not found" });
+    }
+    res.status(200).json({ success: true, product });
+  } catch (error) {
+    console.log(error);
+    res.status(500).json({ success: false, message: "Server Error" });
+  }
 };
 
 // admin
@@ -72,9 +93,47 @@ export const addProduct = async (req, res) => {
   }
 };
 
-export const updateProduct = (req, res) => {
-  // Logic to update a product
-  res.send(`Product with ID: ${req.params.id} updated`);
+export const updateProduct = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { name, description, price, salingPrice, category, stock } = req.body;
+    console.log(name, description, price, salingPrice, category, stock);
+
+    const existingProduct = await Product.findById(id);
+    if (!existingProduct) {
+      return res.status(404).json({ message: "Product not found" });
+    }
+
+    if (req.files && req.files.length > 0) {
+      for (let element of existingProduct.images) {
+        const public_id = extractPublicIdFromUrl(element);
+        await deleteFromCloudinary(public_id);
+      }
+      const imagePaths = req.files.map((file) => file.path);
+      existingProduct.images = imagePaths;
+
+    }
+    
+    
+    existingProduct.name = name || existingProduct.name;
+    existingProduct.description = description || existingProduct.description;
+    existingProduct.price = price || existingProduct.price;
+    existingProduct.salingPrice = salingPrice || existingProduct.salingPrice;
+    existingProduct.category = category || existingProduct.category;
+    existingProduct.stock = stock || existingProduct.stock;
+
+    await existingProduct.save();
+
+    res
+      .status(200)
+      .json({
+        message: "Product updated successfully",
+        product: existingProduct,
+      });
+  } catch (error) {
+    console.log(error);
+    return res.status(500).json({ message: "Server Error" });
+  }
 };
 
 export const deleteProduct = async (req, res) => {
