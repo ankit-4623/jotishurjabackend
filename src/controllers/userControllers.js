@@ -1,6 +1,20 @@
 import User from "../model/userModel.js";
 import jwt from "jsonwebtoken";
+import crypto from "crypto";
+import nodemailer from "nodemailer";
 
+
+// email transporter
+const transporter = nodemailer.createTransport({
+  service: "gmail",
+  auth: {
+    user: process.env.EMAIL_USER,
+    pass: process.env.EMAIL_PASSWORD,
+  },
+});
+
+
+// Register User
 export const registerUser = async (req, res) => {
   try {
     const { name, email, password } = req.body;
@@ -19,6 +33,7 @@ export const registerUser = async (req, res) => {
   }
 };
 
+// Login User
 export const loginUser = async (req, res) => {
   try {
     const { email, password } = req.body;
@@ -52,7 +67,109 @@ export const loginUser = async (req, res) => {
     res.status(500).json({ message: "Internal server error" });
   }
 };
+
+// Logout User
 export const logoutUser = async (req, res) => {
-      res.clearCookie("token");
-      res.status(200).json({ message: "User logged out successfully" });
+  res.clearCookie("token");
+  res.status(200).json({ message: "User logged out successfully" });
 };
+
+// Get User Profile
+export const getUserProfile = async (req, res) => {
+  try {
+    const userId = jwt.verify(req.cookies.token, process.env.JWT_SECRET).userId;
+
+    const user = await User.findById(userId).select("-password");
+    if (!user) {
+      return res.status(404).json({ message: "User not found" });
+    }
+
+    res.status(200).json({ success: true, user });
+  } catch (error) {
+    res.status(500).json({ message: "Internal server error" });
+  }
+};
+
+// send otp
+export const sendOtp = async (req, res) => {
+  try {
+    const { email } = req.body;
+    const user = await User.findOne({ email });
+
+    if (user) {
+      const buffer = crypto.randomBytes(4);
+      const token = (buffer.readUInt32BE(0) % 900000) + 100000;
+      user.resetPasswordToken = token;
+      user.resetPasswordExpires = Date.now() + 900000; // 15 minutes
+      await user.save();
+      const mailOption = {
+        from: `JotishUrja <${process.env.EMAIL_USER}`,
+        to: email ,
+        subject: "Password Reset",
+        text: `You requested a password reset. Your OTP is: ${token}`,
+      };
+
+      transporter.sendMail(mailOption, (error, info) => {
+        if (error) {
+          return res.status(500).json({ message: "Error sending email" });
+        } else {
+          res.status(200).json({ message: "OTP sent successfully" });
+        }
+      });
+    } else {
+      res.status(404).json({ message: "User not found" });
+    }
+  } catch (error) {
+    console.log(error);
+    res.status(500).json({ message: "Internal server error" });
+  }
+};
+
+// check otp
+export const checkOtp = async (req, res) => {
+  try {
+    const { email, otp } = req.body;
+    const user = await User.findOne({
+      email,
+      resetPasswordToken: otp,
+      resetPasswordExpires: { $gt: Date.now() },
+    });
+
+    if (!user) {
+      return res.status(404).json({ message: "otp is invalid or has expired" });
+    }
+
+    await user.save();
+    res.status(200).json({ message: "OTP is Successfully Verified" });
+
+  } catch (error) {
+    console.log(error);
+    res.status(500).json({ message: "Internal server error" });
+  }
+};
+
+// reset password
+
+export const resetPassord = async(req,res)=>{
+  try {
+    const {email,newpassword} = req.body;
+     const user = await User.findOne({email})
+     if (!user) {
+      res.status(404).json({ message: "user not found"})
+     }
+
+     console.log(user.password)
+
+     user.password = newpassword,
+     user.resetPasswordToken = undefined,
+     user.resetPasswordExpires = undefined
+
+     await user.save()
+     res.status(200).json({ message: "Password Reset Successfully" });
+  } catch (error) {
+    console.log(error)
+    res.status(500).json({
+      error: "Server Error",
+    });
+  }
+}
