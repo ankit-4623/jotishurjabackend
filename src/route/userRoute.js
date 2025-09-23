@@ -1,11 +1,12 @@
 import express from 'express';
 import { checkOtp, getUserProfile, loginUser, logoutUser, registerUser, resetPassord, sendOtp } from '../controllers/userControllers.js';
+import { verifyUserAuth } from '../middlewares/userAuth.js';
 const router = express.Router();
 
 router.route('/register').post(registerUser);
 router.route('/login').post(loginUser);
 router.route('/logout').post(logoutUser);
-router.route('/user').get(getUserProfile);
+router.route('/user').get(verifyUserAuth,getUserProfile);
 
 // otp
       
