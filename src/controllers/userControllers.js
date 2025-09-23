@@ -77,14 +77,14 @@ export const logoutUser = async (req, res) => {
 // Get User Profile
 export const getUserProfile = async (req, res) => {
   try {
-    const userId = jwt.verify(req.cookies.token, process.env.JWT_SECRET).userId;
-
-    const user = await User.findById(userId).select("-password");
-    if (!user) {
-      return res.status(404).json({ message: "User not found" });
+    if (!req.user) {
+      return res.status(401).json({ message: "Unauthorized" });
+      
     }
+   
 
-    res.status(200).json({ success: true, user });
+    res.status(200).json({ success: true, user: req.user });
+ 
   } catch (error) {
     res.status(500).json({ message: "Internal server error" });
   }
