@@ -4,7 +4,8 @@ import jwt from "jsonwebtoken";
 // create cart
 export const addTocart = async (req, res) => {
   try {
-    const { product, quantity, userId } = req.body;
+    const { product, quantity } = req.body;
+    const userId = req.user._id;
     const qty = Number(quantity);
 
     if (!product || !qty || qty <= 0) {
@@ -27,14 +28,13 @@ export const addTocart = async (req, res) => {
     );
 
     if (findproductIndex === -1) {
-      // New product in cart
+     
       if (existproduct.stock >= qty) {
         cart.items.push({ product, quantity: qty });
       } else {
         return res.status(400).json({ message: "Quantity out of stock" });
       }
     } else {
-      // Product already exists → check total requested quantity
       const newQuantity = cart.items[findproductIndex].quantity + qty;
       if (existproduct.stock >= newQuantity) {
         cart.items[findproductIndex].quantity = newQuantity;
@@ -44,7 +44,7 @@ export const addTocart = async (req, res) => {
     }
 
     await cart.save();
-    await cart.populate("items.product"); // Optional: return full product details
+    await cart.populate("items.product"); 
 
     res.status(200).json(cart);
   } catch (error) {
@@ -60,7 +60,7 @@ export const addTocart = async (req, res) => {
 // fetchcart by user
 export const fetchCart = async (req, res) => {
   try {
-    const { userId } = req.body;
+    const userId = req.user._id;
     const cart = await Cart.findOne({ user: userId }).populate({
       path: "items.product",
       select: "images name price salingPrice",
@@ -81,7 +81,9 @@ export const fetchCart = async (req, res) => {
 
 export const updateCart = async (req, res) => {
   try {
-    const { product, quantity, userId } = req.body;
+    const { product, quantity } = req.body;
+    const userId = req.user._id;
+
     const qty = Number(quantity);
 
     if (!product || !qty || qty <= 0) {
@@ -89,7 +91,7 @@ export const updateCart = async (req, res) => {
     }
 
     // Get product from DB
-    const existproduct = await Product.findById(product)
+    const existproduct = await Product.findById(product);
     if (!existproduct) {
       return res.status(404).json({ message: "Product not found" });
     }
@@ -133,21 +135,17 @@ export const updateCart = async (req, res) => {
   }
 };
 
-
-
 //  Remove product from cart
 export const removeFromCart = async (req, res) => {
   try {
-    const { userId } = req.body;
-    const {id} = req.params
-    
+    const userId = req.user._id;
+
+    const { id } = req.params;
 
     const cart = await Cart.findOne({ user: userId });
     if (!cart) return res.status(404).json({ message: "Cart not found" });
 
-    cart.items = cart.items.filter(
-      (item) => item.product.toString() !== id
-    );
+    cart.items = cart.items.filter((item) => item.product.toString() !== id);
 
     await cart.save();
     res.status(200).json(cart);
@@ -159,7 +157,7 @@ export const removeFromCart = async (req, res) => {
 // Clear cart
 export const clearCart = async (req, res) => {
   try {
-    const {userId} = req.body;
+    const userId = req.user._id;
 
     let cart = await Cart.findOne({ user: userId });
     if (!cart) return res.status(404).json({ message: "Cart not found" });
@@ -172,5 +170,3 @@ export const clearCart = async (req, res) => {
     res.status(500).json({ message: "Error clearing cart", error });
   }
 };
-
-
