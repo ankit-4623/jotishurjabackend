@@ -1,40 +1,76 @@
 import mongoose from "mongoose";
 
 const orderSchema = new mongoose.Schema({
-  user: {
-    type: mongoose.Schema.Types.ObjectId,
-    ref: "User",
-    required: true,
+  addressInfo: {
+    addressId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Address",
+      required: true,
+    },
   },
-  address: {
-    type: mongoose.Schema.Types.ObjectId,
-    ref: "Address",
-    required: true,
-  },
-  items: [
+  cartItems: [
     {
-      product: {
+      productId: {
         type: mongoose.Schema.Types.ObjectId,
         ref: "Product",
         required: true,
       },
-      quantity: {
-        type: Number,
-        required: true,
-      },
+      title: String,
+      image: String,
+      price: String,
+      quantity: Number,
     },
   ],
-  totalAmount: {
-    type: Number,
+  orderStatus: {
+    type: String,
+    required: true,
+    enum: ["Processing", "Shipped", "Delivered", "Cancelled"],
+    default: "Processing",
+  },
+  user: {
+    type: mongoose.Schema.ObjectId,
+    ref: "User",
     required: true,
   },
-  status: {
-    type: String,
-    enum: ["pending", "shipped", "delivered", "cancelled"],
-    default: "pending",
+  paymentInfo: {
+    id: {
+      type: String,
+      required: true,
+    },
+    status: {
+      type: String,
+      required: true,
+    },
   },
-}, { timestamps: true });
+  paidAt: {
+    type: Date,
+    required: true,
+  },
+  itemPrice: {
+    type: Number,
+    required: true,
+    default: 0,
+  },
+  taxPrice: {
+    type: Number,
+    required: true,
+    default: 0,
+  },
+  shippingPrice: {
+    type: Number,
+    required: true,
+    default: 0,
+  },
+  totalPrice: {
+    type: Number,
+    required: true,
+    default: 0,
+  },
+  deliveredAt: Date,
+  createdAt: {
+    type: Date,
+    default: Date.now,
+  },
+});
 
-const Order = mongoose.model("Order", orderSchema);
-
-export default Order;
+export default mongoose.model("Order", orderSchema);
