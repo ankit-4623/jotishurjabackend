@@ -33,7 +33,7 @@ export const getProductById = async (req, res) => {
   }
 };
 
-// admin
+// admin create product
 export const addProduct = async (req, res) => {
   try {
     const { name, description, price, salingPrice, category, stock } = req.body;
@@ -93,6 +93,7 @@ export const addProduct = async (req, res) => {
   }
 };
 
+// admin update product
 export const updateProduct = async (req, res) => {
   try {
     const { id } = req.params;
@@ -135,7 +136,7 @@ export const updateProduct = async (req, res) => {
     return res.status(500).json({ message: "Server Error" });
   }
 };
-
+// admin delete product
 export const deleteProduct = async (req, res) => {
   const { id } = req.params;
 
