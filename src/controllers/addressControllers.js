@@ -1,16 +1,17 @@
 import Address from "../model/addressModel.js";
 
+//Add Address
 export const Addaddress = async (req, res) => {
   try {
-    const { user, address, city, pincode, notes, phone } = req.body;
-    if (!user || !address || !city || !pincode || !phone || !notes) {
+    const { address, city, pincode, notes, phone } = req.body;
+    if ( !address || !city || !pincode || !phone || !notes) {
       return res.status(400).json({
         success: false,
         message: "Invalid data provided!",
       });
     }
     const addressdata = new Address({
-      user,
+      user:req.user._id,
       address,
       city,
       pincode,
@@ -31,9 +32,10 @@ export const Addaddress = async (req, res) => {
   }
 };
 
+//Fetch Address
 export const fetchAddress = async (req, res) => {
   try {
-    const { id } = req.params;
+    const id = req.user._id;
     const alladdress = await Address.find({user:id}).populate({
       path: "user",
       select: "name email",
@@ -55,12 +57,13 @@ export const fetchAddress = async (req, res) => {
   }
 };
 
-
+//Edit Address
 export const editAddress = async (req, res) => {
   try {
-    const { userId, addressId } = req.params;
+    const {addressId } = req.params;
+    const userId = req.user._id;
     const formData = req.body;
-
+       
     if (!userId || !addressId) {
       return res.status(400).json({
         success: false,
@@ -97,9 +100,11 @@ export const editAddress = async (req, res) => {
   }
 };
 
+//Delete Address
 export const deleteAddress = async (req, res) => {
   try {
-    const { userId, addressId } = req.params;
+    const {  addressId } = req.params;
+    const userId = req.user._id;
     if (!userId || !addressId) {
       return res.status(400).json({
         success: false,
