@@ -9,7 +9,7 @@ export const verifyUserAuth = async (req, res, next) => {
       return res.status(401).json({ message: "Unauthorized" });
     }
     const decodedData = jwt.verify(token, process.env.JWT_SECRET);
-    req.user = await User.findById(decodedData.userId);
+    req.user = await User.findById(decodedData.userId).select("-password");
     next();
   } catch (error) {
     console.log(error);
