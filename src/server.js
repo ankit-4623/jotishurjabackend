@@ -7,6 +7,9 @@ import connectDB from "./config/db.js";
 import userRoute from "./route/userRoute.js";
 import cookieParser from "cookie-parser";
 import Usercart from './route/cartRoute.js'
+import Orders from './route/orderRoutes.js'
+// import paymentRoute from './route/paymentRoute.js'
+
 dotenv.config();
 const app = express();
 const PORT = process.env.PORT;
@@ -22,6 +25,8 @@ app.use("/api/users", userRoute);
 app.use("/api/products", productRoute);
 app.use("/api/carts", Usercart);
 app.use("/api/address", AdressCart);
+app.use("/api/order", Orders);
+// app.use("/api/payment", paymentRoute);
 
 app.listen(PORT, () => {
   connectDB();
