@@ -36,16 +36,9 @@ export const getProductById = async (req, res) => {
 // admin create product
 export const addProduct = async (req, res) => {
   try {
-    const { name, description, price, salingPrice, category, stock } = req.body;
+    const { name, description, price, stock } = req.body;
 
-    if (
-      !name ||
-      !description ||
-      !price ||
-      !salingPrice ||
-      !category ||
-      !stock
-    ) {
+    if (!name || !description || !price || !stock) {
       if (req.files) {
         for (let file of req.files) {
           const public_id = extractPublicIdFromUrl(file.path);
@@ -68,8 +61,6 @@ export const addProduct = async (req, res) => {
       name,
       description,
       price,
-      salingPrice,
-      category,
       stock,
       images: imagePaths,
     };
@@ -97,8 +88,8 @@ export const addProduct = async (req, res) => {
 export const updateProduct = async (req, res) => {
   try {
     const { id } = req.params;
-    const { name, description, price, salingPrice, category, stock } = req.body;
-    console.log(name, description, price, salingPrice, category, stock);
+    const { name, description, price, stock } = req.body;
+    console.log(name, description, price, stock);
 
     const existingProduct = await Product.findById(id);
     if (!existingProduct) {
@@ -112,25 +103,19 @@ export const updateProduct = async (req, res) => {
       }
       const imagePaths = req.files.map((file) => file.path);
       existingProduct.images = imagePaths;
-
     }
-    
-    
+
     existingProduct.name = name || existingProduct.name;
     existingProduct.description = description || existingProduct.description;
     existingProduct.price = price || existingProduct.price;
-    existingProduct.salingPrice = salingPrice || existingProduct.salingPrice;
-    existingProduct.category = category || existingProduct.category;
     existingProduct.stock = stock || existingProduct.stock;
 
     await existingProduct.save();
 
-    res
-      .status(200)
-      .json({
-        message: "Product updated successfully",
-        product: existingProduct,
-      });
+    res.status(200).json({
+      message: "Product updated successfully",
+      product: existingProduct,
+    });
   } catch (error) {
     console.log(error);
     return res.status(500).json({ message: "Server Error" });
