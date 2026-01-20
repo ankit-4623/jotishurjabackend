@@ -23,7 +23,10 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
 // app.use(rateLimitmiddleware);
-// app.use(cors());
+app.use(cors({
+  origin: process.env.CLIENT_URL,
+  credentials: true
+}));
 
 // routes
 app.use("/api/users", userRoute);
@@ -32,7 +35,7 @@ app.use("/api/carts", Usercart);
 app.use("/api/address", AdressCart);
 app.use("/api/order", Orders);
 // app.use("/api/payment", paymentRoute);
-app.use('/api/consultancy',consultancyRoute)
+app.use('/api/consultancy', consultancyRoute)
 app.use('/api/services', serviceRoute)
 
 

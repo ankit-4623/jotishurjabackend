@@ -1,13 +1,16 @@
 import React, { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
+import { sendOtp, checkOtp, resetPassword } from "./api/api";
 
 const ForgotPassword = () => {
   const navigate = useNavigate();
   const [email, setEmail] = useState("");
   const [otp, setOtp] = useState("");
-  const [generatedOtp, setGeneratedOtp] = useState("");
+  const [newPassword, setNewPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
   const [error, setError] = useState("");
-  const [otpSent, setOtpSent] = useState(false);
+  const [step, setStep] = useState(1); // 1: email, 2: otp, 3: new password
+  const [isLoading, setIsLoading] = useState(false);
 
   // Intersection Observer for fade-in
   useEffect(() => {
@@ -30,44 +33,83 @@ const ForgotPassword = () => {
     return () => observer.disconnect();
   }, []);
 
-  // Simulate sending OTP
-  const handleSendOtp = (e) => {
+  // Send OTP API
+  const handleSendOtp = async (e) => {
     e.preventDefault();
     setError("");
     if (!email) {
       setError("Please enter your email.");
       return;
     }
-    // Simulate OTP generation (replace with actual email sending logic)
-    const newOtp = Math.floor(100000 + Math.random() * 900000).toString();
-    setGeneratedOtp(newOtp);
-    setOtpSent(true);
-    alert(`OTP sent to ${email}: ${newOtp} (Simulated for demo)`);
+    setIsLoading(true);
+    try {
+      await sendOtp(email);
+      setStep(2);
+      alert(`OTP sent to ${email}`);
+    } catch (err) {
+      setError(err.response?.data?.message || "Failed to send OTP. Please try again.");
+    } finally {
+      setIsLoading(false);
+    }
   };
 
-  // Verify OTP
-  const handleVerifyOtp = (e) => {
+  // Verify OTP API
+  const handleVerifyOtp = async (e) => {
     e.preventDefault();
     setError("");
     if (!otp) {
       setError("Please enter the OTP.");
       return;
     }
-    if (otp === generatedOtp) {
-      navigate("/create-password");
-    } else {
-      setError("Invalid OTP. Please try again or resend OTP.");
+    setIsLoading(true);
+    try {
+      await checkOtp(email, otp);
+      setStep(3);
+    } catch (err) {
+      setError(err.response?.data?.message || "Invalid OTP. Please try again.");
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  // Reset Password API
+  const handleResetPassword = async (e) => {
+    e.preventDefault();
+    setError("");
+    if (!newPassword || !confirmPassword) {
+      setError("Please fill in both password fields.");
+      return;
+    }
+    if (newPassword !== confirmPassword) {
+      setError("Passwords do not match.");
+      return;
+    }
+    setIsLoading(true);
+    try {
+      await resetPassword(email, newPassword);
+      alert("Password reset successful! Redirecting to login...");
+      navigate("/login");
+    } catch (err) {
+      setError(err.response?.data?.message || "Failed to reset password. Please try again.");
+    } finally {
+      setIsLoading(false);
     }
   };
 
   // Resend OTP
-  const handleResendOtp = (e) => {
+  const handleResendOtp = async (e) => {
     e.preventDefault();
     setError("");
     setOtp("");
-    const newOtp = Math.floor(100000 + Math.random() * 900000).toString();
-    setGeneratedOtp(newOtp);
-    alert(`New OTP sent to ${email}: ${newOtp} (Simulated for demo)`);
+    setIsLoading(true);
+    try {
+      await sendOtp(email);
+      alert(`New OTP sent to ${email}`);
+    } catch (err) {
+      setError(err.response?.data?.message || "Failed to resend OTP.");
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   // Handle button animation
@@ -400,7 +442,7 @@ const ForgotPassword = () => {
         <div className="forgot-password-container fade-in">
           <h2>Forgot Password</h2>
           <div>
-            {!otpSent ? (
+            {step === 1 && (
               <>
                 <input
                   type="email"
@@ -413,11 +455,13 @@ const ForgotPassword = () => {
                     handleSendOtp(e);
                     handleButtonClick(e);
                   }}
+                  disabled={isLoading}
                 >
-                  SEND OTP
+                  {isLoading ? "SENDING..." : "SEND OTP"}
                 </button>
               </>
-            ) : (
+            )}
+            {step === 2 && (
               <>
                 <input
                   type="text"
@@ -430,8 +474,9 @@ const ForgotPassword = () => {
                     handleVerifyOtp(e);
                     handleButtonClick(e);
                   }}
+                  disabled={isLoading}
                 >
-                  VERIFY OTP
+                  {isLoading ? "VERIFYING..." : "VERIFY OTP"}
                 </button>
                 <button
                   className="resend-button"
@@ -439,8 +484,34 @@ const ForgotPassword = () => {
                     handleResendOtp(e);
                     handleButtonClick(e);
                   }}
+                  disabled={isLoading}
                 >
                   RESEND OTP
+                </button>
+              </>
+            )}
+            {step === 3 && (
+              <>
+                <input
+                  type="password"
+                  placeholder="New Password"
+                  value={newPassword}
+                  onChange={(e) => setNewPassword(e.target.value)}
+                />
+                <input
+                  type="password"
+                  placeholder="Confirm New Password"
+                  value={confirmPassword}
+                  onChange={(e) => setConfirmPassword(e.target.value)}
+                />
+                <button
+                  onClick={(e) => {
+                    handleResetPassword(e);
+                    handleButtonClick(e);
+                  }}
+                  disabled={isLoading}
+                >
+                  {isLoading ? "RESETTING..." : "RESET PASSWORD"}
                 </button>
               </>
             )}

@@ -3,12 +3,14 @@
 
 import React, { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
+import { loginUser } from "./api/api";
 
 const Login = () => {
   const navigate = useNavigate();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
+  const [isLoading, setIsLoading] = useState(false);
   const [userType, setUserType] = useState("customer");
   const [isNavOpen, setIsNavOpen] = useState(false);
 
@@ -36,18 +38,23 @@ const Login = () => {
   }, []);
 
   // Handle form submission
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     setError("");
     if (!email || !password) {
       setError("Please fill in both email and password.");
       return;
     }
-    // Simulate login (replace with actual authentication logic)
-    setTimeout(() => {
-      alert(`Login successful! Redirecting to ${userType} dashboard...`);
+    setIsLoading(true);
+    try {
+      const data = await loginUser(email, password);
+      localStorage.setItem("user", JSON.stringify(data.existingUser));
       navigate(userType === "customer" ? "/dashboard" : "/admin-panel");
-    }, 500);
+    } catch (err) {
+      setError(err.response?.data?.message || "Login failed. Please try again.");
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   // Handle button animation
@@ -733,8 +740,9 @@ const Login = () => {
               type="submit"
               onClick={handleButtonClick}
               aria-label="Login"
+              disabled={isLoading}
             >
-              LOGIN
+              {isLoading ? "LOGGING IN..." : "LOGIN"}
             </button>
             <p>
               Don't have an account? <Link to="/signup">Sign Up</Link>

@@ -28,7 +28,7 @@ const App = () => {
       <Route path="/signup" element={<Signup />} />
       <Route path="/forgotpassword" element={<ForgotPassword />} />
       <Route path="/dashboard" element={<AstrologyHomePage />} />
-      <Route path="//admin-panel" element={<AdminPanel />} />
+      <Route path="/admin-panel" element={<AdminPanel />} />
       <Route path="/profile" element={<Profile />} />
       <Route path="/faq" element={<FAQ />} />
       <Route path="/voicecall" element={<VoiceCall />} />

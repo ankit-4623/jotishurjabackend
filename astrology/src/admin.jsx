@@ -241,6 +241,7 @@ const AdminPanel = () => {
     useState("all");
   const [astroOrderStatusFilter, setAstroOrderStatusFilter] = useState("all");
   const [pujaStatusFilter, setPujaStatusFilter] = useState("all");
+  const [dashboardYearFilter, setDashboardYearFilter] = useState("all");
   const [gemstoneData, setGemstoneData] = useState({
     name: "",
     rate: "",
@@ -332,17 +333,16 @@ const AdminPanel = () => {
     ],
     datasets: [
       {
-        label: `Earnings ($) - ${
-          dashboardYearFilter === "all" ? "All Years" : dashboardYearFilter
-        }`,
+        label: `Earnings ($) - ${dashboardYearFilter === "all" ? "All Years" : dashboardYearFilter
+          }`,
         data:
           dashboardYearFilter === "all"
             ? revenueByYear[2023].map(
-                (val, idx) =>
-                  val +
-                  (revenueByYear[2024][idx] || 0) +
-                  (revenueByYear[2025][idx] || 0)
-              )
+              (val, idx) =>
+                val +
+                (revenueByYear[2024][idx] || 0) +
+                (revenueByYear[2025][idx] || 0)
+            )
             : revenueByYear[dashboardYearFilter] || revenueByYear[2023],
         backgroundColor: "rgba(212, 175, 55, 0.6)",
         borderColor: "#d4af37",
@@ -1277,57 +1277,50 @@ const AdminPanel = () => {
           <div className="sidebar">
             <div className="tab-buttons">
               <button
-                className={`tab-button ${
-                  currentTab === "dashboard" ? "active" : ""
-                }`}
+                className={`tab-button ${currentTab === "dashboard" ? "active" : ""
+                  }`}
                 onClick={() => setCurrentTab("dashboard")}
               >
                 Dashboard
               </button>
               <button
-                className={`tab-button ${
-                  currentTab === "gemstoneOrders" ? "active" : ""
-                }`}
+                className={`tab-button ${currentTab === "gemstoneOrders" ? "active" : ""
+                  }`}
                 onClick={() => setCurrentTab("gemstoneOrders")}
               >
                 Gemstone Orders
               </button>
               <button
-                className={`tab-button ${
-                  currentTab === "astroOrders" ? "active" : ""
-                }`}
+                className={`tab-button ${currentTab === "astroOrders" ? "active" : ""
+                  }`}
                 onClick={() => setCurrentTab("astroOrders")}
               >
                 Astrology Solution Orders
               </button>
               <button
-                className={`tab-button ${
-                  currentTab === "consultancy" ? "active" : ""
-                }`}
+                className={`tab-button ${currentTab === "consultancy" ? "active" : ""
+                  }`}
                 onClick={() => setCurrentTab("consultancy")}
               >
                 Consultancy Requests
               </button>
               <button
-                className={`tab-button ${
-                  currentTab === "puja" ? "active" : ""
-                }`}
+                className={`tab-button ${currentTab === "puja" ? "active" : ""
+                  }`}
                 onClick={() => setCurrentTab("puja")}
               >
                 Puja Booking Requests
               </button>
               <button
-                className={`tab-button ${
-                  currentTab === "gemstone" ? "active" : ""
-                }`}
+                className={`tab-button ${currentTab === "gemstone" ? "active" : ""
+                  }`}
                 onClick={() => setCurrentTab("gemstone")}
               >
                 Upload Gemstone
               </button>
               <button
-                className={`tab-button ${
-                  currentTab === "gallery" ? "active" : ""
-                }`}
+                className={`tab-button ${currentTab === "gallery" ? "active" : ""
+                  }`}
                 onClick={() => setCurrentTab("gallery")}
               >
                 Gallery
@@ -2001,24 +1994,24 @@ const AdminPanel = () => {
                 </div>
                 {(galleryData.photos.length > 0 ||
                   galleryData.videos.length > 0) && (
-                  <div className="gallery-preview">
-                    <h4>Preview</h4>
-                    <div className="image-preview">
-                      {galleryData.photos.map((url, index) => (
-                        <img
-                          key={`photo-${index}`}
-                          src={url}
-                          alt={`Gallery Photo ${index + 1}`}
-                        />
-                      ))}
-                      {galleryData.videos.map((url, index) => (
-                        <video key={`video-${index}`} controls>
-                          <source src={url} type="video/mp4" />
-                        </video>
-                      ))}
+                    <div className="gallery-preview">
+                      <h4>Preview</h4>
+                      <div className="image-preview">
+                        {galleryData.photos.map((url, index) => (
+                          <img
+                            key={`photo-${index}`}
+                            src={url}
+                            alt={`Gallery Photo ${index + 1}`}
+                          />
+                        ))}
+                        {galleryData.videos.map((url, index) => (
+                          <video key={`video-${index}`} controls>
+                            <source src={url} type="video/mp4" />
+                          </video>
+                        ))}
+                      </div>
                     </div>
-                  </div>
-                )}
+                  )}
               </div>
             )}
           </div>

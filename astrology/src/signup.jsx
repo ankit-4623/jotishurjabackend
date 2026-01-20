@@ -1,14 +1,17 @@
 
 import React, { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
+import { registerUser } from "./api/api";
 
 const Signup = () => {
   const navigate = useNavigate();
+  const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [emailError, setEmailError] = useState("");
   const [error, setError] = useState("");
+  const [isLoading, setIsLoading] = useState(false);
   const [passwordCriteria, setPasswordCriteria] = useState({
     length: false,
     uppercase: false,
@@ -66,11 +69,11 @@ const Signup = () => {
   }, [email]);
 
   // Handle form submission
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     setError("");
 
-    if (!email || !password || !confirmPassword) {
+    if (!name || !email || !password || !confirmPassword) {
       setError("Please fill in all fields.");
       return;
     }
@@ -96,11 +99,16 @@ const Signup = () => {
       return;
     }
 
-    // Simulate signup (replace with actual authentication logic)
-    setTimeout(() => {
+    setIsLoading(true);
+    try {
+      await registerUser(name, email, password);
       alert("Signup successful! Redirecting to login...");
       navigate("/login");
-    }, 500);
+    } catch (err) {
+      setError(err.response?.data?.message || "Signup failed. Please try again.");
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   // Toggle hamburger menu
@@ -693,6 +701,14 @@ const Signup = () => {
           <form onSubmit={handleSubmit}>
             <div>
               <input
+                type="text"
+                placeholder="Full Name"
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                aria-label="Full Name"
+                required
+              />
+              <input
                 type="email"
                 placeholder="Email"
                 value={email}
@@ -721,43 +737,40 @@ const Signup = () => {
               />
               <div className="password-criteria" id="password-criteria">
                 <div
-                  className={`criteria-item ${
-                    passwordCriteria.length ? "valid" : "invalid"
-                  }`}
+                  className={`criteria-item ${passwordCriteria.length ? "valid" : "invalid"
+                    }`}
                 >
                   <span></span> At least 8 characters
                 </div>
                 <div
-                  className={`criteria-item ${
-                    passwordCriteria.uppercase ? "valid" : "invalid"
-                  }`}
+                  className={`criteria-item ${passwordCriteria.uppercase ? "valid" : "invalid"
+                    }`}
                 >
                   <span></span> At least one uppercase letter
                 </div>
                 <div
-                  className={`criteria-item ${
-                    passwordCriteria.lowercase ? "valid" : "invalid"
-                  }`}
+                  className={`criteria-item ${passwordCriteria.lowercase ? "valid" : "invalid"
+                    }`}
                 >
                   <span></span> At least one lowercase letter
                 </div>
                 <div
-                  className={`criteria-item ${
-                    passwordCriteria.number ? "valid" : "invalid"
-                  }`}
+                  className={`criteria-item ${passwordCriteria.number ? "valid" : "invalid"
+                    }`}
                 >
                   <span></span> At least one number
                 </div>
                 <div
-                  className={`criteria-item ${
-                    passwordCriteria.special ? "valid" : "invalid"
-                  }`}
+                  className={`criteria-item ${passwordCriteria.special ? "valid" : "invalid"
+                    }`}
                 >
                   <span></span> At least one special character
                 </div>
               </div>
               {error && <div className="error-message" id="email-error">{error}</div>}
-              <button type="submit">SIGN UP</button>
+              <button type="submit" disabled={isLoading}>
+                {isLoading ? "SIGNING UP..." : "SIGN UP"}
+              </button>
               <p>
                 Already have an account? <Link to="/login">Login</Link>
               </p>
