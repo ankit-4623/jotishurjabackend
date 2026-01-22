@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
+import { getAllProducts } from "./api/api";
 
 const translations = {
   en: {
@@ -89,6 +90,9 @@ const translations = {
 };
 
 const Gemstone = () => {
+  const [gemstones, setGemstones] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const [isChatOpen, setIsChatOpen] = useState(false);
   const [messages, setMessages] = useState([]);
@@ -97,107 +101,35 @@ const Gemstone = () => {
   const [language, setLanguage] = useState("en");
   const [isNavOpen, setIsNavOpen] = useState(false);
 
-  const gemstones = [
-    {
-      name: "Ruby",
-      name_hi: "माणिक",
-      planet: "Sun",
-      planet_hi: "सूर्य",
-      benefits: "Enhances leadership, vitality, and confidence.",
-      benefits_hi: "नेतृत्व, जीवन शक्ति और आत्मविश्वास को बढ़ाता है।",
-      price: 5000,
-      image: "ruby.jpg",
-    },
-    {
-      name: "Pearl",
-      name_hi: "मोती",
-      planet: "Moon",
-      planet_hi: "चंद्र",
-      benefits: "Promotes emotional balance, calmness, and intuition.",
-      benefits_hi: "भावनात्मक संतुलन, शांति और अंतर्ज्ञान को बढ़ावा देता है।",
-      price: 3000,
-      image: "pearl.jpg",
-    },
-    {
-      name: "Red Coral",
-      name_hi: "लाल मूंगा",
-      planet: "Mars",
-      planet_hi: "मंगल",
-      benefits: "Boosts energy, courage, and protection from enemies.",
-      benefits_hi: "ऊर्जा, साहस और शत्रुओं से सुरक्षा बढ़ाता है।",
-      price: 4000,
-      image: "red_coral.jpg",
-    },
-    {
-      name: "Emerald",
-      name_hi: "पन्ना",
-      planet: "Mercury",
-      planet_hi: "बुध",
-      benefits: "Improves intellect, communication, and business success.",
-      benefits_hi: "बुद्धि, संचार और व्यवसायिक सफलता में सुधार करता है।",
-      price: 6000,
-      image: "emerald.jpg",
-    },
-    {
-      name: "Yellow Sapphire",
-      name_hi: "पीला नीलम",
-      planet: "Jupiter",
-      planet_hi: "बृहस्पति",
-      benefits: "Attracts wealth, wisdom, and spiritual growth.",
-      benefits_hi: "धन, ज्ञान और आध्यात्मिक विकास आकर्षित करता है।",
-      price: 5500,
-      image: "yellow_sapphire.jpg",
-    },
-    {
-      name: "Diamond",
-      name_hi: "हीरा",
-      planet: "Venus",
-      planet_hi: "शुक्र",
-      benefits: "Enhances love, luxury, and artistic talents.",
-      benefits_hi: "प्रेम, विलासिता और कलात्मक प्रतिभाओं को बढ़ाता है।",
-      price: 10000,
-      image: "diamond.jpg",
-    },
-    {
-      name: "Blue Sapphire",
-      name_hi: "नीला नीलम",
-      planet: "Saturn",
-      planet_hi: "शनि",
-      benefits: "Provides discipline, focus, and protection from misfortune.",
-      benefits_hi: "अनुशासन, फोकस और दुर्भाग्य से सुरक्षा प्रदान करता है।",
-      price: 7000,
-      image: "blue_sapphire.jpg",
-    },
-    {
-      name: "Hessonite",
-      name_hi: "गोमेद",
-      planet: "Rahu",
-      planet_hi: "राहु",
-      benefits: "Removes obstacles, brings success in endeavors.",
-      benefits_hi: "बाधाओं को हटाता है, प्रयासों में सफलता लाता है।",
-      price: 4500,
-      image: "hessonite.jpg",
-    },
-    {
-      name: "Cat's Eye",
-      name_hi: "लहसुनिया",
-      planet: "Ketu",
-      planet_hi: "केतु",
-      benefits:
-        "Offers protection from hidden enemies and spiritual enlightenment.",
-      benefits_hi:
-        "छिपे शत्रुओं से सुरक्षा और आध्यात्मिक ज्ञान प्रदान करता है।",
-      price: 4000,
-      image: "cats_eye.jpg",
-    },
-  ];
+  // Fetch Gemstones from Backend
+  useEffect(() => {
+    const fetchGemstones = async () => {
+      try {
+        const response = await getAllProducts();
+        if (response.success) {
+          const gemstoneData = response.products.filter(
+            (product) => product.category === "gemstone"
+          );
+          setGemstones(gemstoneData);
+        } else {
+          setError("Failed to fetch gemstones.");
+        }
+      } catch (err) {
+        console.error("Error fetching gemstones:", err);
+        setError("Error fetching gemstones. Please try again later.");
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchGemstones();
+  }, []);
 
   const filteredGemstones = gemstones.filter((gem) =>
     language === "en"
       ? gem.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        gem.planet.toLowerCase().includes(searchTerm.toLowerCase())
-      : gem.name_hi.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        gem.planet_hi.toLowerCase().includes(searchTerm.toLowerCase())
+      (gem.planet && gem.planet.toLowerCase().includes(searchTerm.toLowerCase()))
+      : (gem.name_hi && gem.name_hi.toLowerCase().includes(searchTerm.toLowerCase())) ||
+      (gem.planet_hi && gem.planet_hi.toLowerCase().includes(searchTerm.toLowerCase()))
   );
 
   useEffect(() => {
@@ -219,47 +151,24 @@ const Gemstone = () => {
   const sendMessage = (text) => {
     const userMessage = { sender: "You", text };
     setMessages((prev) => [...prev, userMessage]);
-    const responses =
-      language === "en"
-        ? {
-            Ruby: "Ruby is associated with the Sun. It enhances leadership, vitality, and confidence. Price: ₹5000.",
-            Pearl:
-              "Pearl is associated with the Moon. It promotes emotional balance, calmness, and intuition. Price: ₹3000.",
-            "Red Coral":
-              "Red Coral is associated with Mars. It boosts energy, courage, and protection from enemies. Price: ₹4000.",
-            Emerald:
-              "Emerald is associated with Mercury. It improves intellect, communication, and business success. Price: ₹6000.",
-            "Yellow Sapphire":
-              "Yellow Sapphire is associated with Jupiter. It attracts wealth, wisdom, and spiritual growth. Price: ₹5500.",
-            Diamond:
-              "Diamond is associated with Venus. It enhances love, luxury, and artistic talents. Price: ₹10000.",
-            "Blue Sapphire":
-              "Blue Sapphire is associated with Saturn. It provides discipline, focus, and protection from misfortune. Price: ₹7000.",
-            Hessonite:
-              "Hessonite is associated with Rahu. It removes obstacles and brings success in endeavors. Price: ₹4500.",
-            "Cat's Eye":
-              "Cat's Eye is associated with Ketu. It offers protection from hidden enemies and spiritual enlightenment. Price: ₹4000.",
-          }
-        : {
-            माणिक:
-              "माणिक सूर्य से जुड़ा है। यह नेतृत्व, जीवन शक्ति और आत्मविश्वास को बढ़ाता है। मूल्य: ₹5000.",
-            मोती: "मोती चंद्र से जुड़ा है। यह भावनात्मक संतुलन, शांति और अंतर्ज्ञान को बढ़ावा देता है। मूल्य: ₹3000.",
-            "लाल मूंगा":
-              "लाल मूंगा मंगल से जुड़ा है। यह ऊर्जा, साहस और शत्रुओं से सुरक्षा बढ़ाता है। मूल्य: ₹4000.",
-            पन्ना:
-              "पन्ना बुध से जुड़ा है। यह बुद्धि, संचार और व्यवसायिक सफलता में सुधार करता है। मूल्य: ₹6000.",
-            "पीला नीलम":
-              "पीला नीलम बृहस्पति से जुड़ा है। यह धन, ज्ञान और आध्यात्मिक विकास आकर्षित करता है। मूल्य: ₹5500.",
-            हीरा: "हीरा शुक्र से जुड़ा है। यह प्रेम, विलासिता और कलात्मक प्रतिभाओं को बढ़ाता है। मूल्य: ₹10000.",
-            "नीला नीलम":
-              "नीला नीलम शनि से जुड़ा है। यह अनुशासन, फोकस और दुर्भाग्य से सुरक्षा प्रदान करता है। मूल्य: ₹7000.",
-            गोमेद:
-              "गोमेद राहु से जुड़ा है। यह बाधाओं को हटाता है और प्रयासों में सफलता लाता है। मूल्य: ₹4500.",
-            लहसुनिया:
-              "लहसुनिया केतु से जुड़ा है। यह छिपे शत्रुओं से सुरक्षा और आध्यात्मिक ज्ञान प्रदान करता है। मूल्य: ₹4000.",
-          };
-    const botResponseText =
-      responses[text] || translations[language].chatbotNoResponse;
+
+    // Dynamic responses based on fetched gemstones
+    let botResponseText = translations[language].chatbotNoResponse || "I didn't understand that.";
+
+    // Check if text matches any gemstone name
+    const matchedGem = gemstones.find(g =>
+      g.name.toLowerCase() === text.toLowerCase() ||
+      (g.name_hi && g.name_hi === text)
+    );
+
+    if (matchedGem) {
+      if (language === "en") {
+        botResponseText = `${matchedGem.name} is associated with ${matchedGem.planet || 'a planet'}. ${matchedGem.benefits || ''} Price: ₹${matchedGem.price}.`;
+      } else {
+        botResponseText = `${matchedGem.name_hi || matchedGem.name} ${matchedGem.planet_hi ? matchedGem.planet_hi + ' से जुड़ा है' : ''}。 ${matchedGem.benefits_hi || ''} मूल्य: ₹${matchedGem.price}.`;
+      }
+    }
+
     setTimeout(() => {
       setMessages((prev) => [
         ...prev,
@@ -272,13 +181,13 @@ const Gemstone = () => {
   const quickMessages =
     language === "en"
       ? gemstones.map((gem) => gem.name)
-      : gemstones.map((gem) => gem.name_hi);
+      : gemstones.map((gem) => gem.name_hi || gem.name);
 
   const handleBuy = (gem) => {
     alert(
-      `${translations[language].buyAlert1} ${
-        language === "en" ? gem.name : gem.name_hi
-      } ${translations[language].buyAlert2} ₹${gem.price}.`
+      `${translations[language].buyButton} ${ // using buyButton generically or adding specific alert key if exists
+      language === "en" ? gem.name : (gem.name_hi || gem.name)
+      } - ₹${gem.price}`
     );
     // Integrate payment here if needed
   };
@@ -304,11 +213,10 @@ const Gemstone = () => {
           }
 
           body {
-            font-family: ${
-              language === "hi"
-                ? "'Noto Serif Devanagari', serif"
-                : "'Source Sans 3', sans-serif"
-            };
+            font-family: ${language === "hi"
+            ? "'Noto Serif Devanagari', serif"
+            : "'Source Sans 3', sans-serif"
+          };
             background: linear-gradient(135deg, #0d1b2a 0%, #1b263b 50%, #415a77 100%);
             color: #faf0e6;
             overflow-x: hidden;
@@ -379,11 +287,10 @@ const Gemstone = () => {
             align-items: center;
             font-size: 22px;
             font-weight: 700;
-            font-family: ${
-              language === "hi"
-                ? "'Noto Serif Devanagari', serif"
-                : "'Playfair Display', serif"
-            };
+            font-family: ${language === "hi"
+            ? "'Noto Serif Devanagari', serif"
+            : "'Playfair Display', serif"
+          };
             letter-spacing: 1.5px;
             text-transform: uppercase;
             color: #d4af37;
@@ -435,11 +342,10 @@ const Gemstone = () => {
             overflow: hidden;
             text-transform: uppercase;
             letter-spacing: 0.8px;
-            font-family: ${
-              language === "hi"
-                ? "'Noto Serif Devanagari', serif"
-                : "'Source Sans 3', sans-serif"
-            };
+            font-family: ${language === "hi"
+            ? "'Noto Serif Devanagari', serif"
+            : "'Source Sans 3', sans-serif"
+          };
           }
 
           .nav a::before {
@@ -553,11 +459,10 @@ const Gemstone = () => {
             font-weight: 500;
             margin-bottom: 5px;
             border: 1px solid transparent;
-            font-family: ${
-              language === "hi"
-                ? "'Noto Serif Devanagari', serif"
-                : "'Source Sans 3', sans-serif"
-            };
+            font-family: ${language === "hi"
+            ? "'Noto Serif Devanagari', serif"
+            : "'Source Sans 3', sans-serif"
+          };
           }
 
           .dropdown-item:hover {
@@ -587,11 +492,10 @@ const Gemstone = () => {
           }
 
           .hero-content h1 {
-            font-family: ${
-              language === "hi"
-                ? "'Noto Serif Devanagari', serif"
-                : "'Playfair Display', serif"
-            };
+            font-family: ${language === "hi"
+            ? "'Noto Serif Devanagari', serif"
+            : "'Playfair Display', serif"
+          };
             font-size: clamp(36px, 6vw, 48px);
             font-weight: 700;
             color: #d4af37;
@@ -602,11 +506,10 @@ const Gemstone = () => {
           }
 
           .hero-content p {
-            font-family: ${
-              language === "hi"
-                ? "'Noto Serif Devanagari', serif"
-                : "'Crimson Text', serif"
-            };
+            font-family: ${language === "hi"
+            ? "'Noto Serif Devanagari', serif"
+            : "'Crimson Text', serif"
+          };
             font-size: clamp(18px, 3vw, 24px);
             color: rgba(212, 175, 55, 0.9);
             margin-bottom: 30px;
@@ -653,11 +556,10 @@ const Gemstone = () => {
           }
 
           .section-title {
-            font-family: ${
-              language === "hi"
-                ? "'Noto Serif Devanagari', serif"
-                : "'Playfair Display', serif"
-            };
+            font-family: ${language === "hi"
+            ? "'Noto Serif Devanagari', serif"
+            : "'Playfair Display', serif"
+          };
             font-size: clamp(32px, 5vw, 40px);
             font-weight: 700;
             text-align: center;
@@ -696,11 +598,10 @@ const Gemstone = () => {
             background: rgba(26, 35, 50, 0.8);
             color: #faf0e6;
             transition: all 0.3s ease;
-            font-family: ${
-              language === "hi"
-                ? "'Noto Serif Devanagari', serif"
-                : "'Source Sans 3', sans-serif"
-            };
+            font-family: ${language === "hi"
+            ? "'Noto Serif Devanagari', serif"
+            : "'Source Sans 3', sans-serif"
+          };
           }
 
           .search-input:focus {
@@ -792,11 +693,10 @@ const Gemstone = () => {
           }
 
           .gemstone-card h3 {
-            font-family: ${
-              language === "hi"
-                ? "'Noto Serif Devanagari', serif"
-                : "'Playfair Display', serif"
-            };
+            font-family: ${language === "hi"
+            ? "'Noto Serif Devanagari', serif"
+            : "'Playfair Display', serif"
+          };
             font-size: 20px;
             font-weight: 700;
             color: #d4af37;
@@ -810,11 +710,10 @@ const Gemstone = () => {
             color: rgba(212, 175, 55, 0.9);
             margin-bottom: 10px;
             line-height: 1.6;
-            font-family: ${
-              language === "hi"
-                ? "'Noto Serif Devanagari', serif"
-                : "'Source Sans 3', sans-serif"
-            };
+            font-family: ${language === "hi"
+            ? "'Noto Serif Devanagari', serif"
+            : "'Source Sans 3', sans-serif"
+          };
           }
 
           .gemstone-card .price {
@@ -836,11 +735,10 @@ const Gemstone = () => {
             transition: all 0.3s ease;
             text-transform: uppercase;
             letter-spacing: 1px;
-            font-family: ${
-              language === "hi"
-                ? "'Noto Serif Devanagari', serif"
-                : "'Source Sans 3', sans-serif"
-            };
+            font-family: ${language === "hi"
+            ? "'Noto Serif Devanagari', serif"
+            : "'Source Sans 3', sans-serif"
+          };
             box-shadow: 0 4px 15px rgba(212, 175, 55, 0.3);
             position: relative;
             overflow: hidden;
@@ -916,11 +814,10 @@ const Gemstone = () => {
           }
 
           .usp-card h3 {
-            font-family: ${
-              language === "hi"
-                ? "'Noto Serif Devanagari', serif"
-                : "'Playfair Display', serif"
-            };
+            font-family: ${language === "hi"
+            ? "'Noto Serif Devanagari', serif"
+            : "'Playfair Display', serif"
+          };
             font-size: 20px;
             font-weight: 700;
             color: #d4af37;
@@ -933,11 +830,10 @@ const Gemstone = () => {
             font-size: 14px;
             color: rgba(212, 175, 55, 0.9);
             line-height: 1.6;
-            font-family: ${
-              language === "hi"
-                ? "'Noto Serif Devanagari', serif"
-                : "'Source Sans 3', sans-serif"
-            };
+            font-family: ${language === "hi"
+            ? "'Noto Serif Devanagari', serif"
+            : "'Source Sans 3', sans-serif"
+          };
           }
 
           .usp-icon {
@@ -975,11 +871,10 @@ const Gemstone = () => {
           }
 
           .footer-logo {
-            font-family: ${
-              language === "hi"
-                ? "'Noto Serif Devanagari', serif"
-                : "'Playfair Display', serif"
-            };
+            font-family: ${language === "hi"
+            ? "'Noto Serif Devanagari', serif"
+            : "'Playfair Display', serif"
+          };
             font-size: 32px;
             font-weight: 700;
             color: #d4af37;
@@ -995,11 +890,10 @@ const Gemstone = () => {
             max-width: 600px;
             line-height: 1.6;
             text-align: center;
-            font-family: ${
-              language === "hi"
-                ? "'Noto Serif Devanagari', serif"
-                : "'Source Sans 3', sans-serif"
-            };
+            font-family: ${language === "hi"
+            ? "'Noto Serif Devanagari', serif"
+            : "'Source Sans 3', sans-serif"
+          };
           }
 
           .footer-links {
@@ -1019,11 +913,10 @@ const Gemstone = () => {
             border-radius: 15px;
             transition: all 0.3s ease;
             min-height: 36px;
-            font-family: ${
-              language === "hi"
-                ? "'Noto Serif Devanagari', serif"
-                : "'Source Sans 3', sans-serif"
-            };
+            font-family: ${language === "hi"
+            ? "'Noto Serif Devanagari', serif"
+            : "'Source Sans 3', sans-serif"
+          };
           }
 
           .footer-links a:hover {
@@ -1039,11 +932,10 @@ const Gemstone = () => {
             font-size: 13px;
             width: 100%;
             text-align: center;
-            font-family: ${
-              language === "hi"
-                ? "'Noto Serif Devanagari', serif"
-                : "'Source Sans 3', sans-serif"
-            };
+            font-family: ${language === "hi"
+            ? "'Noto Serif Devanagari', serif"
+            : "'Source Sans 3', sans-serif"
+          };
           }
 
           .chatbot-button {
@@ -1108,11 +1000,10 @@ const Gemstone = () => {
           }
 
           .chatbot-header h3 {
-            font-family: ${
-              language === "hi"
-                ? "'Noto Serif Devanagari', serif"
-                : "'Playfair Display', serif"
-            };
+            font-family: ${language === "hi"
+            ? "'Noto Serif Devanagari', serif"
+            : "'Playfair Display', serif"
+          };
             font-size: 18px;
             color: #1a2332;
             font-weight: 700;
@@ -1124,11 +1015,10 @@ const Gemstone = () => {
             font-size: 11px;
             color: #1a2332;
             font-style: italic;
-            font-family: ${
-              language === "hi"
-                ? "'Noto Serif Devanagari', serif"
-                : "'Source Sans 3', sans-serif"
-            };
+            font-family: ${language === "hi"
+            ? "'Noto Serif Devanagari', serif"
+            : "'Source Sans 3', sans-serif"
+          };
           }
 
           .chatbot-messages {
@@ -1146,11 +1036,10 @@ const Gemstone = () => {
             border-radius: 12px;
             font-size: 13px;
             line-height: 1.5;
-            font-family: ${
-              language === "hi"
-                ? "'Noto Serif Devanagari', serif"
-                : "'Source Sans 3', sans-serif"
-            };
+            font-family: ${language === "hi"
+            ? "'Noto Serif Devanagari', serif"
+            : "'Source Sans 3', sans-serif"
+          };
           }
 
           .message.user {
@@ -1189,11 +1078,10 @@ const Gemstone = () => {
             flex: 1;
             min-width: 90px;
             min-height: 36px;
-            font-family: ${
-              language === "hi"
-                ? "'Noto Serif Devanagari', serif"
-                : "'Source Sans 3', sans-serif"
-            };
+            font-family: ${language === "hi"
+            ? "'Noto Serif Devanagari', serif"
+            : "'Source Sans 3', sans-serif"
+          };
           }
 
           .quick-button:hover {
@@ -1219,11 +1107,10 @@ const Gemstone = () => {
             outline: none;
             transition: all 0.3s ease;
             min-height: 36px;
-            font-family: ${
-              language === "hi"
-                ? "'Noto Serif Devanagari', serif"
-                : "'Source Sans 3', sans-serif"
-            };
+            font-family: ${language === "hi"
+            ? "'Noto Serif Devanagari', serif"
+            : "'Source Sans 3', sans-serif"
+          };
           }
 
           .chatbot-input:focus {
@@ -1242,11 +1129,10 @@ const Gemstone = () => {
             transition: all 0.3s ease;
             font-weight: 600;
             min-height: 36px;
-            font-family: ${
-              language === "hi"
-                ? "'Noto Serif Devanagari', serif"
-                : "'Source Sans 3', sans-serif"
-            };
+            font-family: ${language === "hi"
+            ? "'Noto Serif Devanagari', serif"
+            : "'Source Sans 3', sans-serif"
+          };
           }
 
           .chatbot-send-button:hover {
@@ -1943,7 +1829,7 @@ const Gemstone = () => {
                 <div key={index} className="gemstone-card">
                   <div className="gem-icon">💎</div>
                   <img
-                    src={gem.image}
+                    src={(gem.images && gem.images.length > 0) ? gem.images[0] : (gem.image || "/placeholder.jpg")}
                     alt={language === "en" ? gem.name : gem.name_hi}
                   />
                   <h3>{language === "en" ? gem.name : gem.name_hi}</h3>

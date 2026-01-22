@@ -1,5 +1,8 @@
+import "./config/loadEnv.js";
 import express from "express";
 import dotenv from "dotenv";
+import path from "path";
+import { fileURLToPath } from "url";
 import cors from "cors";
 import productRoute from "./route/productRoute.js";
 import AdressCart from './route/addressRoute.js'
@@ -13,7 +16,10 @@ import { rateLimitmiddleware } from "./middlewares/rateLimit.js";
 import serviceRoute from "./route/serviceroute.js";
 // import paymentRoute from './route/paymentRoute.js'
 
-dotenv.config();
+// Get the directory name for ES modules
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
 const app = express();
 const PORT = process.env.PORT;
 

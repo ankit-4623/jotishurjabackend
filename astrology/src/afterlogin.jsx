@@ -1,7 +1,8 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Link, useLocation } from "react-router-dom";
+import { Link, useLocation, useNavigate } from "react-router-dom";
+import { logoutUser } from "./api/api";
 import heroImage from "./assets/gaurav sir background.png";
 import diwaliBanner from "./assets/diwali-astrology-offer-banner.jpg";
 import gemstoneBanner from "./assets/gemstone-collection-banner.jpg";
@@ -249,6 +250,7 @@ const translations = {
 };
 
 const AfterLogin = () => {
+  const navigate = useNavigate();
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const [currentSlide, setCurrentSlide] = useState(0);
   const [contactName, setContactName] = useState("");
@@ -302,6 +304,19 @@ const AfterLogin = () => {
 
   const toggleDropdown = () => {
     setDropdownOpen(!dropdownOpen);
+  };
+
+  const handleLogout = async () => {
+    try {
+      await logoutUser();
+      localStorage.removeItem("user");
+      navigate("/login");
+    } catch (error) {
+      console.error("Logout failed:", error);
+      // Still clear local storage and redirect even if API fails
+      localStorage.removeItem("user");
+      navigate("/login");
+    }
   };
 
   const handleContactSubmit = (e) => {
@@ -615,6 +630,20 @@ const AfterLogin = () => {
             background: rgba(212, 175, 55, 0.15);
             transform: translateX(8px);
             border-color: rgba(212, 175, 55, 0.3);
+          }
+
+          .logout-btn {
+            background: transparent;
+            width: 100%;
+            text-align: left;
+            cursor: pointer;
+            margin-bottom: 0;
+          }
+
+          .logout-btn:hover {
+            background: rgba(231, 76, 60, 0.2);
+            border-color: rgba(231, 76, 60, 0.5);
+            color: #e74c3c;
           }
 
           .hero-section {
@@ -1924,6 +1953,9 @@ const AfterLogin = () => {
                 <Link to="/faq" className="dropdown-item">
                   {translations[language].dropdown_faq}
                 </Link>
+                <button className="dropdown-item logout-btn" onClick={handleLogout}>
+                  Logout
+                </button>
               </div>
             </div>
             <button className="language-button" onClick={toggleLanguage}>
@@ -1969,9 +2001,8 @@ const AfterLogin = () => {
             {slides.map((_, index) => (
               <span
                 key={index}
-                className={`indicator ${
-                  index === currentSlide ? "active" : ""
-                }`}
+                className={`indicator ${index === currentSlide ? "active" : ""
+                  }`}
                 onClick={() => setCurrentSlide(index)}
               ></span>
             ))}

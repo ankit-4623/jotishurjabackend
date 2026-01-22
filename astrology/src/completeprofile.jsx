@@ -1,10 +1,12 @@
 
 "use client";
 
-import { useState } from "react";
-import { Link } from "react-router-dom";
+import { useState, useEffect } from "react";
+import { Link, useNavigate } from "react-router-dom";
+import { getUserProfile, updateUserProfile, logoutUser } from "./api/api";
 
 const Profile = () => {
+  const navigate = useNavigate();
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const [isNavOpen, setIsNavOpen] = useState(false);
   const [name, setName] = useState("");
@@ -12,6 +14,30 @@ const Profile = () => {
   const [birthTime, setBirthTime] = useState("");
   const [birthPlace, setBirthPlace] = useState("");
   const [gender, setGender] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
+  const [success, setSuccess] = useState("");
+
+  // Load existing profile data on mount
+  useEffect(() => {
+    const fetchProfile = async () => {
+      try {
+        const data = await getUserProfile();
+        if (data.user) {
+          setName(data.user.name || "");
+          if (data.user.dateOfBirth) {
+            setDob(new Date(data.user.dateOfBirth).toISOString().split('T')[0]);
+          }
+          setBirthTime(data.user.timeOfBirth || "");
+          setBirthPlace(data.user.placeOfBirth || "");
+          setGender(data.user.gender || "");
+        }
+      } catch (err) {
+        console.error("Failed to load profile:", err);
+      }
+    };
+    fetchProfile();
+  }, []);
 
   const toggleDropdown = () => {
     setDropdownOpen(!dropdownOpen);
@@ -21,9 +47,45 @@ const Profile = () => {
     setIsNavOpen(!isNavOpen);
   };
 
-  const handleSubmit = (e) => {
+  const handleLogout = async () => {
+    try {
+      await logoutUser();
+      localStorage.removeItem("user");
+      navigate("/login");
+    } catch (error) {
+      console.error("Logout failed:", error);
+      localStorage.removeItem("user");
+      navigate("/login");
+    }
+  };
+
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    alert("Profile saved successfully!");
+    setError("");
+    setSuccess("");
+    setLoading(true);
+
+    try {
+      const profileData = {
+        name,
+        dateOfBirth: dob,
+        timeOfBirth: birthTime,
+        placeOfBirth: birthPlace,
+        gender,
+      };
+
+      const data = await updateUserProfile(profileData);
+
+      // Update localStorage with new user data
+      const storedUser = JSON.parse(localStorage.getItem("user") || "{}");
+      localStorage.setItem("user", JSON.stringify({ ...storedUser, ...data.user }));
+
+      setSuccess("Profile saved successfully!");
+    } catch (err) {
+      setError(err.response?.data?.message || "Failed to save profile. Please try again.");
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -286,6 +348,45 @@ const Profile = () => {
           .dropdown-item.disabled {
             cursor: default;
             opacity: 0.7;
+          }
+
+          .logout-btn {
+            background: transparent;
+            width: 100%;
+            text-align: left;
+            cursor: pointer;
+            font-family: inherit;
+            font-size: inherit;
+          }
+
+          .logout-btn:hover {
+            background: rgba(231, 76, 60, 0.2);
+            border-color: rgba(231, 76, 60, 0.5);
+            color: #e74c3c;
+          }
+
+          .error-message {
+            color: #e74c3c;
+            font-size: 14px;
+            margin: 10px 0;
+            padding: 10px;
+            background: rgba(231, 76, 60, 0.1);
+            border-radius: 8px;
+            border: 1px solid rgba(231, 76, 60, 0.3);
+            width: 100%;
+            max-width: 350px;
+          }
+
+          .success-message {
+            color: #27ae60;
+            font-size: 14px;
+            margin: 10px 0;
+            padding: 10px;
+            background: rgba(39, 174, 96, 0.1);
+            border-radius: 8px;
+            border: 1px solid rgba(39, 174, 96, 0.3);
+            width: 100%;
+            max-width: 350px;
           }
 
           .section {
@@ -847,6 +948,9 @@ const Profile = () => {
                 <Link to="/faq" className="dropdown-item">
                   FAQ Section
                 </Link>
+                <button className="dropdown-item logout-btn" onClick={handleLogout}>
+                  Logout
+                </button>
               </div>
             </div>
           </div>
@@ -909,8 +1013,11 @@ const Profile = () => {
                   <option value="other">Other</option>
                 </select>
 
-                <button className="card-button" type="submit">
-                  Save Profile
+                {error && <div className="error-message">{error}</div>}
+                {success && <div className="success-message">{success}</div>}
+
+                <button className="card-button" type="submit" disabled={loading}>
+                  {loading ? "Saving..." : "Save Profile"}
                 </button>
               </form>
             </div>

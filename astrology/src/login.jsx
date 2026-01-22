@@ -11,7 +11,6 @@ const Login = () => {
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [isLoading, setIsLoading] = useState(false);
-  const [userType, setUserType] = useState("customer");
   const [isNavOpen, setIsNavOpen] = useState(false);
 
   // Intersection Observer for fade-in
@@ -37,7 +36,7 @@ const Login = () => {
     };
   }, []);
 
-  // Handle form submission
+  // Handle form submission - role-based redirect
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError("");
@@ -48,8 +47,15 @@ const Login = () => {
     setIsLoading(true);
     try {
       const data = await loginUser(email, password);
-      localStorage.setItem("user", JSON.stringify(data.existingUser));
-      navigate(userType === "customer" ? "/dashboard" : "/admin-panel");
+      const user = data.existingUser;
+      localStorage.setItem("user", JSON.stringify(user));
+
+      // Role-based redirect
+      if (user.role === "admin") {
+        navigate("/admin-panel");
+      } else {
+        navigate("/dashboard");
+      }
     } catch (err) {
       setError(err.response?.data?.message || "Login failed. Please try again.");
     } finally {
@@ -63,14 +69,6 @@ const Login = () => {
     setTimeout(() => {
       e.target.style.transform = "";
     }, 150);
-  };
-
-  // Toggle between customer and admin login
-  const toggleUserType = (type) => {
-    setUserType(type);
-    setEmail("");
-    setPassword("");
-    setError("");
   };
 
   // Toggle hamburger menu
@@ -286,15 +284,6 @@ const Login = () => {
           letter-spacing: 1.5px;
         }
 
-        .login-buttons {
-          display: flex;
-          gap: 10px;
-          width: 100%;
-          max-width: 350px;
-          margin: 15px auto;
-          justify-content: center;
-        }
-
         .login-container button {
           background: #d4af37;
           color: #1a2332;
@@ -310,7 +299,6 @@ const Login = () => {
           box-shadow: 0 4px 15px rgba(212, 175, 55, 0.3);
           position: relative;
           overflow: hidden;
-          flex: 1;
           min-height: 44px;
         }
 
@@ -333,17 +321,6 @@ const Login = () => {
           transform: translateY(-2px) scale(1.05);
           box-shadow: 0 8px 20px rgba(212, 175, 55, 0.4);
           background: linear-gradient(135deg, #e9c46a, #d4af37);
-        }
-
-        .toggle-btn {
-          background: rgba(55, 65, 81, 0.8);
-          color: #faf0e6;
-          border: 1px solid rgba(212, 175, 55, 0.3);
-        }
-
-        .toggle-btn.active {
-          background: linear-gradient(135deg, #d4af37, #e9c46a);
-          color: #1a2332;
         }
 
         .login-container input {
@@ -521,12 +498,6 @@ const Login = () => {
             margin-bottom: 12px;
           }
 
-          .login-buttons {
-            flex-direction: column;
-            gap: 8px;
-            margin: 12px auto;
-            max-width: 300px;
-          }
 
           .login-container button {
             padding: 10px 15px;
@@ -615,11 +586,6 @@ const Login = () => {
             margin-bottom: 10px;
           }
 
-          .login-buttons {
-            gap: 6px;
-            margin: 10px auto;
-            max-width: 280px;
-          }
 
           .login-container button {
             padding: 8px 12px;
@@ -694,23 +660,7 @@ const Login = () => {
 
       <section className="login-section">
         <div className="login-container fade-in login-card">
-          <h2>{userType === "customer" ? "Customer Login" : "Admin Login"}</h2>
-          <div className="login-buttons">
-            <button
-              className={`toggle-btn ${userType === "customer" ? "active" : ""}`}
-              onClick={() => toggleUserType("customer")}
-              aria-label="Switch to customer login"
-            >
-              CUSTOMER
-            </button>
-            <button
-              className={`toggle-btn ${userType === "admin" ? "active" : ""}`}
-              onClick={() => toggleUserType("admin")}
-              aria-label="Switch to admin login"
-            >
-              ADMIN
-            </button>
-          </div>
+          <h2>Login</h2>
           <form onSubmit={handleSubmit}>
             <div className="input-group">
               <label className="input-label" htmlFor="email">Email</label>

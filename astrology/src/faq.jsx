@@ -2,7 +2,8 @@
 "use client";
 
 import { useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
+import { logoutUser } from "./api/api";
 
 const translations = {
   en: {
@@ -64,6 +65,7 @@ const translations = {
 };
 
 const FAQ = () => {
+  const navigate = useNavigate();
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const [language, setLanguage] = useState("en");
   const [isNavOpen, setIsNavOpen] = useState(false);
@@ -78,6 +80,18 @@ const FAQ = () => {
 
   const toggleNav = () => {
     setIsNavOpen(!isNavOpen);
+  };
+
+  const handleLogout = async () => {
+    try {
+      await logoutUser();
+      localStorage.removeItem("user");
+      navigate("/login");
+    } catch (error) {
+      console.error("Logout failed:", error);
+      localStorage.removeItem("user");
+      navigate("/login");
+    }
   };
 
   return (
@@ -342,6 +356,21 @@ const FAQ = () => {
           .dropdown-item.disabled {
             cursor: default;
             opacity: 0.7;
+          }
+
+          .logout-btn {
+            background: transparent;
+            width: 100%;
+            text-align: left;
+            cursor: pointer;
+            font-family: inherit;
+            font-size: inherit;
+          }
+
+          .logout-btn:hover {
+            background: rgba(231, 76, 60, 0.2);
+            border-color: rgba(231, 76, 60, 0.5);
+            color: #e74c3c;
           }
 
           .section {
@@ -853,6 +882,9 @@ const FAQ = () => {
                 <span className="dropdown-item disabled">
                   {translations[language].profileFAQ}
                 </span>
+                <button className="dropdown-item logout-btn" onClick={handleLogout}>
+                  Logout
+                </button>
               </div>
             </div>
             <button

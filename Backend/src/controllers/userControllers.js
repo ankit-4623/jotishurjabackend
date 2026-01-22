@@ -79,13 +79,46 @@ export const getUserProfile = async (req, res) => {
   try {
     if (!req.user) {
       return res.status(401).json({ message: "Unauthorized" });
-      
+
     }
-   
+
 
     res.status(200).json({ success: true, user: req.user });
- 
+
   } catch (error) {
+    res.status(500).json({ message: "Internal server error" });
+  }
+};
+
+// Update User Profile
+export const updateUserProfile = async (req, res) => {
+  try {
+    if (!req.user) {
+      return res.status(401).json({ message: "Unauthorized" });
+    }
+
+    const { name, dateOfBirth, timeOfBirth, placeOfBirth, gender } = req.body;
+
+    const updateData = {};
+    if (name) updateData.name = name;
+    if (dateOfBirth) updateData.dateOfBirth = dateOfBirth;
+    if (timeOfBirth) updateData.timeOfBirth = timeOfBirth;
+    if (placeOfBirth) updateData.placeOfBirth = placeOfBirth;
+    if (gender) updateData.gender = gender;
+
+    const updatedUser = await User.findByIdAndUpdate(
+      req.user._id,
+      updateData,
+      { new: true, runValidators: true }
+    ).select('-password');
+
+    res.status(200).json({
+      success: true,
+      message: "Profile updated successfully",
+      user: updatedUser
+    });
+  } catch (error) {
+    console.log(`Error updating profile: ${error}`);
     res.status(500).json({ message: "Internal server error" });
   }
 };
@@ -103,14 +136,15 @@ export const sendOtp = async (req, res) => {
       user.resetPasswordExpires = Date.now() + 900000; // 15 minutes
       await user.save();
       const mailOption = {
-        from: `JotishUrja <${process.env.EMAIL_USER}`,
-        to: email ,
+        from: `JotishUrja <${process.env.EMAIL_USER}>`,
+        to: email,
         subject: "Password Reset",
         text: `You requested a password reset. Your OTP is: ${token}`,
       };
 
       transporter.sendMail(mailOption, (error, info) => {
         if (error) {
+          console.error("Nodemailer Error:", error);
           return res.status(500).json({ message: "Error sending email" });
         } else {
           res.status(200).json({ message: "OTP sent successfully" });
@@ -150,26 +184,25 @@ export const checkOtp = async (req, res) => {
 
 // reset password
 
-export const resetPassord = async(req,res)=>{
+export const resetPasswordController = async (req, res) => {
   try {
-    const {email,newpassword} = req.body;
-     const user = await User.findOne({email})
-     if (!user) {
-      res.status(404).json({ message: "user not found"})
-     }
+    const { email, newpassword } = req.body;
+    const user = await User.findOne({ email });
 
-     console.log(user.password)
+    if (!user) {
+      return res.status(404).json({ message: "user not found" });
+    }
 
-     user.password = newpassword,
-     user.resetPasswordToken = undefined,
-     user.resetPasswordExpires = undefined
+    user.password = newpassword;
+    user.resetPasswordToken = undefined;
+    user.resetPasswordExpires = undefined;
 
-     await user.save()
-     res.status(200).json({ message: "Password Reset Successfully" });
+    await user.save();
+    res.status(200).json({ message: "Password Reset Successfully" });
   } catch (error) {
-    console.log(error)
+    console.log(error);
     res.status(500).json({
       error: "Server Error",
     });
   }
-}
+};

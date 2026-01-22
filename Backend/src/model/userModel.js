@@ -20,26 +20,40 @@ const userSchema = new mongoose.Schema({
     enum: ["user", "admin"],
     default: "user",
   },
+  // Profile fields
+  dateOfBirth: {
+    type: Date,
+  },
+  timeOfBirth: {
+    type: String,
+  },
+  placeOfBirth: {
+    type: String,
+  },
+  gender: {
+    type: String,
+    enum: ["male", "female", "other"],
+  },
   resetPasswordToken: String,
   resetPasswordExpires: Date,
- 
-},{timestamps: true});
 
-userSchema.pre('save', async function(next) {
- try {
-   if (!this.isModified('password')) {
-    return next();
+}, { timestamps: true });
+
+userSchema.pre('save', async function (next) {
+  try {
+    if (!this.isModified('password')) {
+      return next();
+    }
+
+    this.password = await bcrypt.hash(this.password, 10);
+    next();
+
+  } catch (error) {
+    console.log(error);
   }
-  
-  this.password = await bcrypt.hash(this.password, 10);
-  next();
-  
- } catch (error) {
-  console.log(error);
- }
 });
 
-userSchema.methods.isPasswordMatch = async function(password) {
+userSchema.methods.isPasswordMatch = async function (password) {
   try {
     return await bcrypt.compare(password, this.password);
   } catch (error) {

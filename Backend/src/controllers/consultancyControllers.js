@@ -1,34 +1,34 @@
 import ConsultancyModel from "../model/ConsultancyModel.js";
 
 export const createConsultancyRequest = async (req, res) => {
-  try {
-       const {type, fulllName, dateofBirth, timeofBirth, placeofBirth, gender, areaOfConcern, price} = req.body;
+    try {
+        const { type, fulllName, dateofBirth, timeofBirth, placeofBirth, gender, areaOfConcern, price } = req.body;
 
-       const pendingConsultancyRequest = await ConsultancyModel.findOne({ userId: req.user._id, status: "pending" });
-       if (pendingConsultancyRequest) {
-           return res.status(400).json({ success: false, message: "You already have a pending consultancy request" });
-       }
-       const newConsultancyRequest = new ConsultancyModel({
-           userId: req.user._id,
-           type,
-           fulllName,
-           dateofBirth,
-           timeofBirth,
-           placeofBirth,
-           gender,
-           areaOfConcern,
-           price,
-           paidAt: Date.now()
-       });
+        const pendingConsultancyRequest = await ConsultancyModel.findOne({ userId: req.user._id, status: "pending" });
+        if (pendingConsultancyRequest) {
+            return res.status(400).json({ success: false, message: "You already have a pending consultancy request" });
+        }
+        const newConsultancyRequest = new ConsultancyModel({
+            userId: req.user._id,
+            type,
+            fulllName,
+            dateofBirth,
+            timeofBirth,
+            placeofBirth,
+            gender,
+            areaOfConcern,
+            price,
+            paidAt: Date.now()
+        });
 
-       await newConsultancyRequest.save();
-       
+        await newConsultancyRequest.save();
 
-       res.status(201).json({ success: true, message: "Consultancy request created successfully", data: newConsultancyRequest });
-  } catch (error) {
-      console.log(error);
-      res.status(500).json({ success: false, message: "create consultancy request Server Error" });
-  }
+
+        res.status(201).json({ success: true, message: "Consultancy request created successfully", data: newConsultancyRequest });
+    } catch (error) {
+        console.log(error);
+        res.status(500).json({ success: false, message: "create consultancy request Server Error" });
+    }
 
 };
 
@@ -38,6 +38,19 @@ export const getAllConsultancyRequests = async (req, res) => {
         res.status(200).json({ success: true, data: consultancyRequests });
     } catch (error) {
         console.log(`error coming from get all consultancy request controller ${error}`);
+        res.status(500).json({ success: false, message: "get all consultancy request Server Error" });
+    }
+};
+
+// Admin: Get ALL consultancy requests (not filtered by user)
+export const getAdminAllConsultancyRequests = async (req, res) => {
+    try {
+        const consultancyRequests = await ConsultancyModel.find()
+            .populate("userId", "name email")
+            .sort({ createdAt: -1 });
+        res.status(200).json({ success: true, data: consultancyRequests });
+    } catch (error) {
+        console.log(`error coming from admin get all consultancy request controller ${error}`);
         res.status(500).json({ success: false, message: "get all consultancy request Server Error" });
     }
 };

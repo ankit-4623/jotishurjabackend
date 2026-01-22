@@ -36,7 +36,7 @@ export const getProductById = async (req, res) => {
 // admin create product
 export const addProduct = async (req, res) => {
   try {
-    const { name, description, price, stock } = req.body;
+    const { name, description, price, stock, category, name_hi, planet, planet_hi, benefits, benefits_hi } = req.body;
 
     if (!name || !description || !price || !stock) {
       if (req.files) {
@@ -63,6 +63,12 @@ export const addProduct = async (req, res) => {
       price,
       stock,
       images: imagePaths,
+      category,
+      name_hi,
+      planet,
+      planet_hi,
+      benefits,
+      benefits_hi,
     };
 
     const createdProduct = await Product.create(newProduct);
@@ -88,7 +94,7 @@ export const addProduct = async (req, res) => {
 export const updateProduct = async (req, res) => {
   try {
     const { id } = req.params;
-    const { name, description, price, stock } = req.body;
+    const { name, description, price, stock, category, name_hi, planet, planet_hi, benefits, benefits_hi } = req.body;
     console.log(name, description, price, stock);
 
     const existingProduct = await Product.findById(id);
@@ -109,6 +115,12 @@ export const updateProduct = async (req, res) => {
     existingProduct.description = description || existingProduct.description;
     existingProduct.price = price || existingProduct.price;
     existingProduct.stock = stock || existingProduct.stock;
+    if (category) existingProduct.category = category;
+    if (name_hi) existingProduct.name_hi = name_hi;
+    if (planet) existingProduct.planet = planet;
+    if (planet_hi) existingProduct.planet_hi = planet_hi;
+    if (benefits) existingProduct.benefits = benefits;
+    if (benefits_hi) existingProduct.benefits_hi = benefits_hi;
 
     await existingProduct.save();
 

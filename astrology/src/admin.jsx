@@ -1,7 +1,7 @@
 "use client";
 
-import React, { useState, useRef } from "react";
-import { Link } from "react-router-dom";
+import React, { useState, useRef, useEffect } from "react";
+import { Link, useNavigate } from "react-router-dom";
 import { Bar } from "react-chartjs-2";
 import {
   Chart as ChartJS,
@@ -14,6 +14,15 @@ import {
 } from "chart.js";
 import jsPDF from "jspdf";
 import html2canvas from "html2canvas";
+import {
+  getAllAdminOrders,
+  updateAdminOrderStatus,
+  getAdminAllConsultancyRequests,
+  updateConsultancyRequest,
+  getAllProducts,
+  addProduct,
+  logoutUser,
+} from "./api/api";
 
 // Register Chart.js components
 ChartJS.register(
@@ -25,191 +34,7 @@ ChartJS.register(
   Legend
 );
 
-// Mock data for gemstone orders
-const mockGemstoneOrders = [
-  {
-    id: 1,
-    item: "Ruby Gemstone",
-    status: "pending",
-    amount: 50,
-    place: "New York",
-  },
-  {
-    id: 2,
-    item: "Emerald Gemstone",
-    status: "completed",
-    amount: 100,
-    place: "London",
-  },
-  {
-    id: 3,
-    item: "Sapphire Gemstone",
-    status: "pending",
-    amount: 75,
-    place: "Paris",
-  },
-  {
-    id: 4,
-    item: "Diamond Gemstone",
-    status: "completed",
-    amount: 150,
-    place: "Berlin",
-  },
-  {
-    id: 5,
-    item: "Amethyst Gemstone",
-    status: "pending",
-    amount: 60,
-    place: "Tokyo",
-  },
-  {
-    id: 6,
-    item: "Topaz Gemstone",
-    status: "completed",
-    amount: 120,
-    place: "Sydney",
-  },
-];
-
-// Mock data for astrology solution orders
-const mockAstroOrders = [
-  {
-    id: 1,
-    name: "John Doe",
-    phone: "1234567890",
-    email: "john@example.com",
-    dob: "1990-01-01",
-    birthTime: "12:00 PM",
-    birthPlace: "New York",
-    item: "Horoscope Reading",
-    status: "pending",
-    amount: 50,
-    place: "New York",
-  },
-  {
-    id: 2,
-    name: "Jane Smith",
-    phone: "0987654321",
-    email: "jane@example.com",
-    dob: "1985-05-15",
-    birthTime: "08:30 AM",
-    birthPlace: "London",
-    item: "Kundali Matching",
-    status: "completed",
-    amount: 100,
-    place: "London",
-  },
-  {
-    id: 3,
-    name: "Alice Johnson",
-    phone: "1122334455",
-    email: "alice@example.com",
-    dob: "1992-07-22",
-    birthTime: "03:45 PM",
-    birthPlace: "Paris",
-    item: "Palmistry Session",
-    status: "pending",
-    amount: 75,
-    place: "Paris",
-  },
-  {
-    id: 4,
-    name: "Bob Brown",
-    phone: "5566778899",
-    email: "bob@example.com",
-    dob: "1988-03-10",
-    birthTime: "10:15 AM",
-    birthPlace: "Berlin",
-    item: "Vastu Consultation",
-    status: "completed",
-    amount: 150,
-    place: "Berlin",
-  },
-  {
-    id: 5,
-    name: "Charlie Davis",
-    phone: "6677889900",
-    email: "charlie@example.com",
-    dob: "1995-11-30",
-    birthTime: "05:00 PM",
-    birthPlace: "Tokyo",
-    item: "Horoscope Reading",
-    status: "pending",
-    amount: 60,
-    place: "Tokyo",
-  },
-  {
-    id: 6,
-    name: "Dana Evans",
-    phone: "7788990011",
-    email: "dana@example.com",
-    dob: "1980-09-05",
-    birthTime: "02:20 AM",
-    birthPlace: "Sydney",
-    item: "Kundali Matching",
-    status: "completed",
-    amount: 120,
-    place: "Sydney",
-  },
-];
-
-const mockConsultancies = [
-  {
-    id: 1,
-    name: "John Doe",
-    dob: "1990-01-01",
-    birthTime: "12:00 PM",
-    birthPlace: "New York",
-    type: "video",
-    status: "pending",
-  },
-  {
-    id: 2,
-    name: "Jane Smith",
-    dob: "1985-05-15",
-    birthTime: "08:30 AM",
-    birthPlace: "London",
-    type: "audio",
-    status: "completed",
-  },
-  {
-    id: 3,
-    name: "Alice Johnson",
-    dob: "1992-07-22",
-    birthTime: "03:45 PM",
-    birthPlace: "Paris",
-    type: "offline",
-    status: "pending",
-  },
-  {
-    id: 4,
-    name: "Bob Brown",
-    dob: "1988-03-10",
-    birthTime: "10:15 AM",
-    birthPlace: "Berlin",
-    type: "video",
-    status: "pending",
-  },
-  {
-    id: 5,
-    name: "Charlie Davis",
-    dob: "1995-11-30",
-    birthTime: "05:00 PM",
-    birthPlace: "Tokyo",
-    type: "audio",
-    status: "completed",
-  },
-  {
-    id: 6,
-    name: "Dana Evans",
-    dob: "1980-09-05",
-    birthTime: "02:20 AM",
-    birthPlace: "Sydney",
-    type: "offline",
-    status: "pending",
-  },
-];
-
+// Mock data for puja bookings (until backend API is implemented)
 const mockPujaBookings = [
   {
     id: 1,
@@ -235,6 +60,7 @@ const mockPujaBookings = [
 ];
 
 const AdminPanel = () => {
+  const navigate = useNavigate();
   const [currentTab, setCurrentTab] = useState("dashboard");
   const [consultStatusFilter, setConsultStatusFilter] = useState("all");
   const [gemstoneOrderStatusFilter, setGemstoneOrderStatusFilter] =
@@ -247,69 +73,134 @@ const AdminPanel = () => {
     rate: "",
     description: "",
     images: [],
+    imageFiles: [],
   });
   const [galleryData, setGalleryData] = useState({ photos: [], videos: [] });
   const [isNavOpen, setIsNavOpen] = useState(false);
-  const [gemstoneOrders, setGemstoneOrders] = useState(mockGemstoneOrders);
-  const [astroOrders, setAstroOrders] = useState(mockAstroOrders);
+
+  // Logout handler
+  const handleLogout = async () => {
+    try {
+      await logoutUser();
+      localStorage.removeItem("user");
+      navigate("/login");
+    } catch (error) {
+      console.error("Logout failed:", error);
+      localStorage.removeItem("user");
+      navigate("/login");
+    }
+  };
+
+  // Real data states (from backend)
+  const [orders, setOrders] = useState([]);
+  const [consultancies, setConsultancies] = useState([]);
+  const [products, setProducts] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+
   const dashboardRef = useRef(null);
+
+  // Fetch data from backend on component mount
+  useEffect(() => {
+    const fetchData = async () => {
+      setLoading(true);
+      setError(null);
+      try {
+        // Fetch orders
+        const ordersResponse = await getAllAdminOrders();
+        if (ordersResponse.success) {
+          setOrders(ordersResponse.data);
+        }
+
+        // Fetch consultancies
+        const consultanciesResponse = await getAdminAllConsultancyRequests();
+        if (consultanciesResponse.success) {
+          setConsultancies(consultanciesResponse.data);
+        }
+
+        // Fetch products (gemstones)
+        const productsResponse = await getAllProducts();
+        if (productsResponse.success) {
+          setProducts(productsResponse.data);
+        }
+      } catch (err) {
+        console.error("Error fetching admin data:", err);
+        setError(err.response?.data?.message || "Failed to load data. Please try again.");
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchData();
+  }, []);
 
   // Toggle hamburger menu
   const toggleNav = () => {
     setIsNavOpen(!isNavOpen);
   };
 
-  // Handle status change for gemstone orders
-  const handleGemstoneStatusChange = (id, newStatus) => {
-    setGemstoneOrders((prevOrders) =>
-      prevOrders.map((order) =>
-        order.id === id ? { ...order, status: newStatus } : order
-      )
-    );
+  // Handle status change for orders (API call)
+  const handleOrderStatusChange = async (id, newStatus) => {
+    try {
+      const response = await updateAdminOrderStatus(id, newStatus);
+      if (response.success) {
+        setOrders((prevOrders) =>
+          prevOrders.map((order) =>
+            order._id === id ? { ...order, orderStatus: newStatus } : order
+          )
+        );
+      }
+    } catch (err) {
+      console.error("Error updating order status:", err);
+      alert("Failed to update order status");
+    }
   };
 
-  // Handle status change for astrology orders
-  const handleAstroStatusChange = (id, newStatus) => {
-    setAstroOrders((prevOrders) =>
-      prevOrders.map((order) =>
-        order.id === id ? { ...order, status: newStatus } : order
-      )
-    );
+  // Handle status change for consultancy (API call)
+  const handleConsultancyStatusChange = async (id, newStatus) => {
+    try {
+      const response = await updateConsultancyRequest(id, { status: newStatus });
+      if (response.success) {
+        setConsultancies((prev) =>
+          prev.map((item) =>
+            item._id === id ? { ...item, status: newStatus } : item
+          )
+        );
+      }
+    } catch (err) {
+      console.error("Error updating consultancy status:", err);
+      alert("Failed to update consultancy status");
+    }
   };
 
-  // Dashboard calculations
-  const filteredGemstoneOrdersForDashboard = gemstoneOrders.filter(
+  // Dashboard calculations using real data
+  const filteredOrdersForDashboard = orders.filter(
     (order) =>
       gemstoneOrderStatusFilter === "all" ||
-      order.status === gemstoneOrderStatusFilter
+      order.orderStatus?.toLowerCase() === gemstoneOrderStatusFilter
   );
 
-  const filteredAstroOrdersForDashboard = astroOrders.filter(
-    (order) =>
-      astroOrderStatusFilter === "all" ||
-      order.status === astroOrderStatusFilter
-  );
+  const pendingOrders = orders.filter(
+    (order) => order.orderStatus === "Processing"
+  ).length;
 
-  const pendingGemstoneOrders = gemstoneOrders.filter(
-    (order) => order.status === "pending"
-  ).length;
-  const pendingAstroOrders = astroOrders.filter(
-    (order) => order.status === "pending"
-  ).length;
-  const pendingConsultancies = mockConsultancies.filter(
+  const pendingConsultanciesCount = consultancies.filter(
     (consult) => consult.status === "pending"
   ).length;
-  const totalGemstoneEarnings = gemstoneOrders.reduce(
-    (sum, order) => sum + order.amount,
-    0
-  );
-  const totalAstroEarnings = astroOrders.reduce(
-    (sum, order) => sum + order.amount,
-    0
-  );
-  const totalEarnings = totalGemstoneEarnings + totalAstroEarnings;
 
-  // Yearly revenue data
+  const totalOrderEarnings = orders.reduce(
+    (sum, order) => sum + (order.totalPrice || 0),
+    0
+  );
+
+  const totalConsultancyEarnings = consultancies.reduce(
+    (sum, consult) => sum + (consult.price || 0),
+    0
+  );
+
+  const totalEarnings = totalOrderEarnings + totalConsultancyEarnings;
+
+  // Yearly revenue data (can be calculated from real orders if needed)
   const revenueByYear = {
     2023: [200, 300, 150, 400, 250, 500, 350, 450, 300, 400, 200, 600],
     2024: [300, 400, 200, 500, 350, 600, 450, 550, 400, 500, 300, 700],
@@ -372,22 +263,16 @@ const AdminPanel = () => {
     },
   };
 
-  // Filtered data for other tabs
-  const filteredConsultancies = mockConsultancies.filter(
+  // Filtered data for other tabs (using real data)
+  const filteredConsultancies = consultancies.filter(
     (consult) =>
       consultStatusFilter === "all" || consult.status === consultStatusFilter
   );
 
-  const filteredGemstoneOrders = gemstoneOrders.filter(
+  const filteredOrders = orders.filter(
     (order) =>
       gemstoneOrderStatusFilter === "all" ||
-      order.status === gemstoneOrderStatusFilter
-  );
-
-  const filteredAstroOrders = astroOrders.filter(
-    (order) =>
-      astroOrderStatusFilter === "all" ||
-      order.status === astroOrderStatusFilter
+      order.orderStatus?.toLowerCase() === gemstoneOrderStatusFilter
   );
 
   const filteredPujaBookings = mockPujaBookings.filter(
@@ -408,7 +293,11 @@ const AdminPanel = () => {
       alert("Only image files are allowed!");
     }
     const imageUrls = validImages.map((file) => URL.createObjectURL(file));
-    setGemstoneData({ ...gemstoneData, images: imageUrls });
+    setGemstoneData({
+      ...gemstoneData,
+      images: imageUrls,
+      imageFiles: validImages
+    });
   };
 
   // Handle gallery uploads
@@ -429,16 +318,44 @@ const AdminPanel = () => {
     });
   };
 
-  // Handle gemstone form submission
-  const handleGemstoneSubmit = (e) => {
+  // Handle gemstone form submission (using API)
+  const handleGemstoneSubmit = async (e) => {
     e.preventDefault();
-    alert(`Gemstone Uploaded: ${JSON.stringify(gemstoneData)}`);
-    setGemstoneData({
-      name: "",
-      rate: "",
-      description: "",
-      images: [],
-    });
+
+    try {
+      const formData = new FormData();
+      formData.append("name", gemstoneData.name);
+      formData.append("price", gemstoneData.rate);
+      formData.append("description", gemstoneData.description);
+      formData.append("stock", 1); // Default stock
+
+      // Append image files
+      if (gemstoneData.imageFiles && gemstoneData.imageFiles.length > 0) {
+        gemstoneData.imageFiles.forEach((file) => {
+          formData.append("images", file);
+        });
+      }
+
+      const response = await addProduct(formData);
+      if (response.success) {
+        alert("Gemstone uploaded successfully!");
+        setGemstoneData({
+          name: "",
+          rate: "",
+          description: "",
+          images: [],
+          imageFiles: [],
+        });
+        // Refresh products
+        const productsResponse = await getAllProducts();
+        if (productsResponse.success) {
+          setProducts(productsResponse.data);
+        }
+      }
+    } catch (err) {
+      console.error("Error uploading gemstone:", err);
+      alert(err.response?.data?.message || "Failed to upload gemstone. Please try again.");
+    }
   };
 
   // Handle gallery submission
@@ -649,6 +566,30 @@ const AdminPanel = () => {
           transform: translateY(-2px);
           box-shadow: 0 4px 16px rgba(212, 175, 55, 0.2);
           background: rgba(212, 175, 55, 0.1);
+        }
+
+        .logout-nav-btn {
+          color: #d4af37;
+          text-decoration: none;
+          font-size: 14px;
+          font-weight: 600;
+          padding: 10px 18px;
+          border: 2px solid transparent;
+          border-radius: 20px;
+          transition: all 0.3s ease;
+          text-transform: uppercase;
+          letter-spacing: 1px;
+          background: transparent;
+          cursor: pointer;
+          font-family: inherit;
+        }
+
+        .logout-nav-btn:hover {
+          border-color: #e74c3c;
+          transform: translateY(-2px);
+          box-shadow: 0 4px 16px rgba(231, 76, 60, 0.3);
+          background: rgba(231, 76, 60, 0.1);
+          color: #e74c3c;
         }
 
         h1 {
@@ -1265,7 +1206,7 @@ const AdminPanel = () => {
             <nav>
               <Link to="/#home">HOME</Link>
               <Link to="/#about">ABOUT</Link>
-              <Link to="/login">LOGOUT</Link>
+              <button className="logout-nav-btn" onClick={handleLogout}>LOGOUT</button>
             </nav>
           </div>
         </div>
@@ -1363,195 +1304,111 @@ const AdminPanel = () => {
                 </div>
                 <div className="dashboard-stats">
                   <div className="stat-card">
-                    <h3>Pending Gemstone Orders</h3>
-                    <p>{pendingGemstoneOrders}</p>
+                    <h3>Pending Orders</h3>
+                    <p>{pendingOrders}</p>
                   </div>
                   <div className="stat-card">
-                    <h3>Pending Astro Orders</h3>
-                    <p>{pendingAstroOrders}</p>
+                    <h3>Total Orders</h3>
+                    <p>{orders.length}</p>
                   </div>
                   <div className="stat-card">
                     <h3>Pending Consultancies</h3>
-                    <p>{pendingConsultancies}</p>
+                    <p>{pendingConsultanciesCount}</p>
                   </div>
                   <div className="stat-card">
                     <h3>Total Earnings</h3>
-                    <p>${totalEarnings}</p>
+                    <p>₹{totalEarnings}</p>
                   </div>
                 </div>
                 <div className="chart-container">
                   <Bar data={earningsData} options={earningsOptions} />
                 </div>
-                <h3>Gemstone Orders</h3>
-                <p>
-                  Total Gemstone Orders:{" "}
-                  {filteredGemstoneOrdersForDashboard.length}
-                </p>
-                <table>
-                  <thead>
-                    <tr>
-                      <th>ID</th>
-                      <th>Item</th>
-                      <th>Status</th>
-                      <th>Amount</th>
-                      <th>Place</th>
-                      <th>Change Status</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {filteredGemstoneOrdersForDashboard.map((order) => (
-                      <tr key={order.id}>
-                        <td>{order.id}</td>
-                        <td>{order.item}</td>
-                        <td>{order.status}</td>
-                        <td>${order.amount}</td>
-                        <td>{order.place}</td>
-                        <td>
+                <h3>Orders</h3>
+                {loading ? (
+                  <p>Loading orders...</p>
+                ) : error ? (
+                  <p style={{ color: '#ff6b6b' }}>{error}</p>
+                ) : (
+                  <>
+                    <p>Total Orders: {filteredOrdersForDashboard.length}</p>
+                    <table>
+                      <thead>
+                        <tr>
+                          <th>Order ID</th>
+                          <th>Customer</th>
+                          <th>Items</th>
+                          <th>Total</th>
+                          <th>Status</th>
+                          <th>Date</th>
+                          <th>Change Status</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {filteredOrdersForDashboard.map((order) => (
+                          <tr key={order._id}>
+                            <td>{order._id?.slice(-6)}</td>
+                            <td>{order.user?.name || 'N/A'}</td>
+                            <td>
+                              {order.cartItems?.map(item => item.title).join(', ') || 'N/A'}
+                            </td>
+                            <td>₹{order.totalPrice || 0}</td>
+                            <td>{order.orderStatus}</td>
+                            <td>{order.createdAt ? new Date(order.createdAt).toLocaleDateString() : 'N/A'}</td>
+                            <td>
+                              <select
+                                value={order.orderStatus}
+                                onChange={(e) =>
+                                  handleOrderStatusChange(order._id, e.target.value)
+                                }
+                              >
+                                <option value="Processing">Processing</option>
+                                <option value="Shipped">Shipped</option>
+                                <option value="Delivered">Delivered</option>
+                                <option value="Cancelled">Cancelled</option>
+                              </select>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                    <div className="responsive-table">
+                      {filteredOrdersForDashboard.map((order) => (
+                        <div key={order._id} className="table-card">
+                          <h4>Order #{order._id?.slice(-6)}</h4>
+                          <p>
+                            <strong>Customer:</strong> {order.user?.name || 'N/A'}
+                          </p>
+                          <p>
+                            <strong>Email:</strong> {order.user?.email || 'N/A'}
+                          </p>
+                          <p>
+                            <strong>Items:</strong> {order.cartItems?.map(item => item.title).join(', ') || 'N/A'}
+                          </p>
+                          <p>
+                            <strong>Total:</strong> ₹{order.totalPrice || 0}
+                          </p>
+                          <p>
+                            <strong>Status:</strong> {order.orderStatus}
+                          </p>
+                          <p>
+                            <strong>Date:</strong> {order.createdAt ? new Date(order.createdAt).toLocaleDateString() : 'N/A'}
+                          </p>
                           <select
-                            value={order.status}
+                            value={order.orderStatus}
                             onChange={(e) =>
-                              handleGemstoneStatusChange(
-                                order.id,
-                                e.target.value
-                              )
+                              handleOrderStatusChange(order._id, e.target.value)
                             }
                           >
-                            <option value="pending">Pending</option>
-                            <option value="shipped">Shipped</option>
-                            <option value="delivered">Delivered</option>
+                            <option value="Processing">Processing</option>
+                            <option value="Shipped">Shipped</option>
+                            <option value="Delivered">Delivered</option>
+                            <option value="Cancelled">Cancelled</option>
                           </select>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-                <div className="responsive-table">
-                  {filteredGemstoneOrdersForDashboard.map((order) => (
-                    <div key={order.id} className="table-card">
-                      <h4>Order #{order.id}</h4>
-                      <p>
-                        <strong>Item:</strong> {order.item}
-                      </p>
-                      <p>
-                        <strong>Status:</strong> {order.status}
-                      </p>
-                      <p>
-                        <strong>Amount:</strong> ${order.amount}
-                      </p>
-                      <p>
-                        <strong>Place:</strong> {order.place}
-                      </p>
-                      <select
-                        value={order.status}
-                        onChange={(e) =>
-                          handleGemstoneStatusChange(order.id, e.target.value)
-                        }
-                      >
-                        <option value="pending">Pending</option>
-                        <option value="shipped">Shipped</option>
-                        <option value="delivered">Delivered</option>
-                      </select>
+                        </div>
+                      ))}
                     </div>
-                  ))}
-                </div>
-                <h3>Astrology Solution Orders</h3>
-                <p>
-                  Total Astro Orders: {filteredAstroOrdersForDashboard.length}
-                </p>
-                <table>
-                  <thead>
-                    <tr>
-                      <th>ID</th>
-                      <th>Name</th>
-                      <th>Phone</th>
-                      <th>Email</th>
-                      <th>DOB</th>
-                      <th>Birth Time</th>
-                      <th>Birth Place</th>
-                      <th>Item</th>
-                      <th>Status</th>
-                      <th>Amount</th>
-                      <th>Place</th>
-                      <th>Change Status</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {filteredAstroOrdersForDashboard.map((order) => (
-                      <tr key={order.id}>
-                        <td>{order.id}</td>
-                        <td>{order.name}</td>
-                        <td>{order.phone}</td>
-                        <td>{order.email}</td>
-                        <td>{order.dob}</td>
-                        <td>{order.birthTime}</td>
-                        <td>{order.birthPlace}</td>
-                        <td>{order.item}</td>
-                        <td>{order.status}</td>
-                        <td>${order.amount}</td>
-                        <td>{order.place}</td>
-                        <td>
-                          <select
-                            value={order.status}
-                            onChange={(e) =>
-                              handleAstroStatusChange(order.id, e.target.value)
-                            }
-                          >
-                            <option value="pending">Pending</option>
-                            <option value="shipped">Shipped</option>
-                            <option value="delivered">Delivered</option>
-                          </select>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-                <div className="responsive-table">
-                  {filteredAstroOrdersForDashboard.map((order) => (
-                    <div key={order.id} className="table-card">
-                      <h4>Order #{order.id}</h4>
-                      <p>
-                        <strong>Name:</strong> {order.name}
-                      </p>
-                      <p>
-                        <strong>Phone:</strong> {order.phone}
-                      </p>
-                      <p>
-                        <strong>Email:</strong> {order.email}
-                      </p>
-                      <p>
-                        <strong>DOB:</strong> {order.dob}
-                      </p>
-                      <p>
-                        <strong>Birth Time:</strong> {order.birthTime}
-                      </p>
-                      <p>
-                        <strong>Birth Place:</strong> {order.birthPlace}
-                      </p>
-                      <p>
-                        <strong>Item:</strong> {order.item}
-                      </p>
-                      <p>
-                        <strong>Status:</strong> {order.status}
-                      </p>
-                      <p>
-                        <strong>Amount:</strong> ${order.amount}
-                      </p>
-                      <p>
-                        <strong>Place:</strong> {order.place}
-                      </p>
-                      <select
-                        value={order.status}
-                        onChange={(e) =>
-                          handleAstroStatusChange(order.id, e.target.value)
-                        }
-                      >
-                        <option value="pending">Pending</option>
-                        <option value="shipped">Shipped</option>
-                        <option value="delivered">Delivered</option>
-                      </select>
-                    </div>
-                  ))}
-                </div>
+                  </>
+                )}
                 <button className="download-btn" onClick={downloadPDF}>
                   Download Dashboard as PDF
                 </button>
@@ -1560,7 +1417,7 @@ const AdminPanel = () => {
 
             {currentTab === "gemstoneOrders" && (
               <div>
-                <h2>Gemstone Orders</h2>
+                <h2>All Orders</h2>
                 <div className="filter-container">
                   <div className="form-group">
                     <label>Filter by Status</label>
@@ -1571,197 +1428,107 @@ const AdminPanel = () => {
                       }
                     >
                       <option value="all">All</option>
-                      <option value="pending">Pending</option>
+                      <option value="processing">Processing</option>
                       <option value="shipped">Shipped</option>
                       <option value="delivered">Delivered</option>
+                      <option value="cancelled">Cancelled</option>
                     </select>
                   </div>
                 </div>
-                <p>Total Gemstone Orders: {filteredGemstoneOrders.length}</p>
-                <table>
-                  <thead>
-                    <tr>
-                      <th>ID</th>
-                      <th>Item</th>
-                      <th>Status</th>
-                      <th>Amount</th>
-                      <th>Place</th>
-                      <th>Change Status</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {filteredGemstoneOrders.map((order) => (
-                      <tr key={order.id}>
-                        <td>{order.id}</td>
-                        <td>{order.item}</td>
-                        <td>{order.status}</td>
-                        <td>${order.amount}</td>
-                        <td>{order.place}</td>
-                        <td>
+                {loading ? (
+                  <p>Loading orders...</p>
+                ) : error ? (
+                  <p style={{ color: '#ff6b6b' }}>{error}</p>
+                ) : (
+                  <>
+                    <p>Total Orders: {filteredOrders.length}</p>
+                    <table>
+                      <thead>
+                        <tr>
+                          <th>Order ID</th>
+                          <th>Customer</th>
+                          <th>Email</th>
+                          <th>Items</th>
+                          <th>Total</th>
+                          <th>Status</th>
+                          <th>Date</th>
+                          <th>Change Status</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {filteredOrders.map((order) => (
+                          <tr key={order._id}>
+                            <td>{order._id?.slice(-6)}</td>
+                            <td>{order.user?.name || 'N/A'}</td>
+                            <td>{order.user?.email || 'N/A'}</td>
+                            <td>
+                              {order.cartItems?.map(item => item.title).join(', ') || 'N/A'}
+                            </td>
+                            <td>₹{order.totalPrice || 0}</td>
+                            <td>{order.orderStatus}</td>
+                            <td>{order.createdAt ? new Date(order.createdAt).toLocaleDateString() : 'N/A'}</td>
+                            <td>
+                              <select
+                                value={order.orderStatus}
+                                onChange={(e) =>
+                                  handleOrderStatusChange(order._id, e.target.value)
+                                }
+                              >
+                                <option value="Processing">Processing</option>
+                                <option value="Shipped">Shipped</option>
+                                <option value="Delivered">Delivered</option>
+                                <option value="Cancelled">Cancelled</option>
+                              </select>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                    <div className="responsive-table">
+                      {filteredOrders.map((order) => (
+                        <div key={order._id} className="table-card">
+                          <h4>Order #{order._id?.slice(-6)}</h4>
+                          <p>
+                            <strong>Customer:</strong> {order.user?.name || 'N/A'}
+                          </p>
+                          <p>
+                            <strong>Email:</strong> {order.user?.email || 'N/A'}
+                          </p>
+                          <p>
+                            <strong>Items:</strong> {order.cartItems?.map(item => item.title).join(', ') || 'N/A'}
+                          </p>
+                          <p>
+                            <strong>Total:</strong> ₹{order.totalPrice || 0}
+                          </p>
+                          <p>
+                            <strong>Status:</strong> {order.orderStatus}
+                          </p>
+                          <p>
+                            <strong>Date:</strong> {order.createdAt ? new Date(order.createdAt).toLocaleDateString() : 'N/A'}
+                          </p>
                           <select
-                            value={order.status}
+                            value={order.orderStatus}
                             onChange={(e) =>
-                              handleGemstoneStatusChange(
-                                order.id,
-                                e.target.value
-                              )
+                              handleOrderStatusChange(order._id, e.target.value)
                             }
                           >
-                            <option value="pending">Pending</option>
-                            <option value="shipped">Shipped</option>
-                            <option value="delivered">Delivered</option>
+                            <option value="Processing">Processing</option>
+                            <option value="Shipped">Shipped</option>
+                            <option value="Delivered">Delivered</option>
+                            <option value="Cancelled">Cancelled</option>
                           </select>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-                <div className="responsive-table">
-                  {filteredGemstoneOrders.map((order) => (
-                    <div key={order.id} className="table-card">
-                      <h4>Order #{order.id}</h4>
-                      <p>
-                        <strong>Item:</strong> {order.item}
-                      </p>
-                      <p>
-                        <strong>Status:</strong> {order.status}
-                      </p>
-                      <p>
-                        <strong>Amount:</strong> ${order.amount}
-                      </p>
-                      <p>
-                        <strong>Place:</strong> {order.place}
-                      </p>
-                      <select
-                        value={order.status}
-                        onChange={(e) =>
-                          handleGemstoneStatusChange(order.id, e.target.value)
-                        }
-                      >
-                        <option value="pending">Pending</option>
-                        <option value="shipped">Shipped</option>
-                        <option value="delivered">Delivered</option>
-                      </select>
+                        </div>
+                      ))}
                     </div>
-                  ))}
-                </div>
+                  </>
+                )}
               </div>
             )}
 
             {currentTab === "astroOrders" && (
               <div>
-                <h2>Astrology Solution Orders</h2>
-                <div className="filter-container">
-                  <div className="form-group">
-                    <label>Filter by Status</label>
-                    <select
-                      value={astroOrderStatusFilter}
-                      onChange={(e) =>
-                        setAstroOrderStatusFilter(e.target.value)
-                      }
-                    >
-                      <option value="all">All</option>
-                      <option value="pending">Pending</option>
-                      <option value="shipped">Shipped</option>
-                      <option value="delivered">Delivered</option>
-                    </select>
-                  </div>
-                </div>
-                <p>Total Astro Orders: {filteredAstroOrders.length}</p>
-                <table>
-                  <thead>
-                    <tr>
-                      <th>ID</th>
-                      <th>Name</th>
-                      <th>Phone</th>
-                      <th>Email</th>
-                      <th>DOB</th>
-                      <th>Birth Time</th>
-                      <th>Birth Place</th>
-                      <th>Item</th>
-                      <th>Status</th>
-                      <th>Amount</th>
-                      <th>Place</th>
-                      <th>Change Status</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {filteredAstroOrders.map((order) => (
-                      <tr key={order.id}>
-                        <td>{order.id}</td>
-                        <td>{order.name}</td>
-                        <td>{order.phone}</td>
-                        <td>{order.email}</td>
-                        <td>{order.dob}</td>
-                        <td>{order.birthTime}</td>
-                        <td>{order.birthPlace}</td>
-                        <td>{order.item}</td>
-                        <td>{order.status}</td>
-                        <td>${order.amount}</td>
-                        <td>{order.place}</td>
-                        <td>
-                          <select
-                            value={order.status}
-                            onChange={(e) =>
-                              handleAstroStatusChange(order.id, e.target.value)
-                            }
-                          >
-                            <option value="pending">Pending</option>
-                            <option value="shipped">Shipped</option>
-                            <option value="delivered">Delivered</option>
-                          </select>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-                <div className="responsive-table">
-                  {filteredAstroOrders.map((order) => (
-                    <div key={order.id} className="table-card">
-                      <h4>Order #{order.id}</h4>
-                      <p>
-                        <strong>Name:</strong> {order.name}
-                      </p>
-                      <p>
-                        <strong>Phone:</strong> {order.phone}
-                      </p>
-                      <p>
-                        <strong>Email:</strong> {order.email}
-                      </p>
-                      <p>
-                        <strong>DOB:</strong> {order.dob}
-                      </p>
-                      <p>
-                        <strong>Birth Time:</strong> {order.birthTime}
-                      </p>
-                      <p>
-                        <strong>Birth Place:</strong> {order.birthPlace}
-                      </p>
-                      <p>
-                        <strong>Item:</strong> {order.item}
-                      </p>
-                      <p>
-                        <strong>Status:</strong> {order.status}
-                      </p>
-                      <p>
-                        <strong>Amount:</strong> ${order.amount}
-                      </p>
-                      <p>
-                        <strong>Place:</strong> {order.place}
-                      </p>
-                      <select
-                        value={order.status}
-                        onChange={(e) =>
-                          handleAstroStatusChange(order.id, e.target.value)
-                        }
-                      >
-                        <option value="pending">Pending</option>
-                        <option value="shipped">Shipped</option>
-                        <option value="delivered">Delivered</option>
-                      </select>
-                    </div>
-                  ))}
-                </div>
+                <h2>Consultancy Orders</h2>
+                <p>Consultancy requests are shown under the "Consultancy Requests" tab.</p>
               </div>
             )}
 
@@ -1777,59 +1544,96 @@ const AdminPanel = () => {
                     >
                       <option value="all">All</option>
                       <option value="pending">Pending</option>
-                      <option value="completed">Completed</option>
+                      <option value="accepted">Accepted</option>
+                      <option value="rejected">Rejected</option>
                     </select>
                   </div>
                 </div>
-                <table>
-                  <thead>
-                    <tr>
-                      <th>Name</th>
-                      <th>DOB</th>
-                      <th>Birth Time</th>
-                      <th>Birth Place</th>
-                      <th>Type</th>
-                      <th>Status</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {filteredConsultancies.map((consult) => (
-                      <tr key={consult.id}>
-                        <td>{consult.name}</td>
-                        <td>{consult.dob}</td>
-                        <td>{consult.birthTime}</td>
-                        <td>{consult.birthPlace}</td>
-                        <td>{consult.type}</td>
-                        <td>{consult.status}</td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-                <div className="responsive-table">
-                  {filteredConsultancies.map((consult) => (
-                    <div key={consult.id} className="table-card">
-                      <h4>Request #{consult.id}</h4>
-                      <p>
-                        <strong>Name:</strong> {consult.name}
-                      </p>
-                      <p>
-                        <strong>DOB:</strong> {consult.dob}
-                      </p>
-                      <p>
-                        <strong>Birth Time:</strong> {consult.birthTime}
-                      </p>
-                      <p>
-                        <strong>Birth Place:</strong> {consult.birthPlace}
-                      </p>
-                      <p>
-                        <strong>Type:</strong> {consult.type}
-                      </p>
-                      <p>
-                        <strong>Status:</strong> {consult.status}
-                      </p>
+                {loading ? (
+                  <p>Loading consultancies...</p>
+                ) : (
+                  <>
+                    <p>Total Consultancy Requests: {filteredConsultancies.length}</p>
+                    <table>
+                      <thead>
+                        <tr>
+                          <th>Name</th>
+                          <th>DOB</th>
+                          <th>Birth Time</th>
+                          <th>Birth Place</th>
+                          <th>Type</th>
+                          <th>Area of Concern</th>
+                          <th>Price</th>
+                          <th>Status</th>
+                          <th>Change Status</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {filteredConsultancies.map((consult) => (
+                          <tr key={consult._id}>
+                            <td>{consult.fulllName}</td>
+                            <td>{consult.dateofBirth ? new Date(consult.dateofBirth).toLocaleDateString() : 'N/A'}</td>
+                            <td>{consult.timeofBirth}</td>
+                            <td>{consult.placeofBirth}</td>
+                            <td>{consult.type}</td>
+                            <td>{consult.areaOfConcern}</td>
+                            <td>₹{consult.price}</td>
+                            <td>{consult.status}</td>
+                            <td>
+                              <select
+                                value={consult.status}
+                                onChange={(e) => handleConsultancyStatusChange(consult._id, e.target.value)}
+                              >
+                                <option value="pending">Pending</option>
+                                <option value="accepted">Accepted</option>
+                                <option value="rejected">Rejected</option>
+                              </select>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                    <div className="responsive-table">
+                      {filteredConsultancies.map((consult) => (
+                        <div key={consult._id} className="table-card">
+                          <h4>Request #{consult._id?.slice(-6)}</h4>
+                          <p>
+                            <strong>Name:</strong> {consult.fulllName}
+                          </p>
+                          <p>
+                            <strong>DOB:</strong> {consult.dateofBirth ? new Date(consult.dateofBirth).toLocaleDateString() : 'N/A'}
+                          </p>
+                          <p>
+                            <strong>Birth Time:</strong> {consult.timeofBirth}
+                          </p>
+                          <p>
+                            <strong>Birth Place:</strong> {consult.placeofBirth}
+                          </p>
+                          <p>
+                            <strong>Type:</strong> {consult.type}
+                          </p>
+                          <p>
+                            <strong>Concern:</strong> {consult.areaOfConcern}
+                          </p>
+                          <p>
+                            <strong>Price:</strong> ₹{consult.price}
+                          </p>
+                          <p>
+                            <strong>Status:</strong> {consult.status}
+                          </p>
+                          <select
+                            value={consult.status}
+                            onChange={(e) => handleConsultancyStatusChange(consult._id, e.target.value)}
+                          >
+                            <option value="pending">Pending</option>
+                            <option value="accepted">Accepted</option>
+                            <option value="rejected">Rejected</option>
+                          </select>
+                        </div>
+                      ))}
                     </div>
-                  ))}
-                </div>
+                  </>
+                )}
               </div>
             )}
 
