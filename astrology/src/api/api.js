@@ -190,4 +190,50 @@ export const matchmaking = async (matchData) => {
     return response.data;
 };
 
+// ==================== Puja Booking APIs ====================
+export const createPujaBooking = async (bookingData) => {
+    const response = await api.post("/puja/addBooking", bookingData);
+    return response.data;
+};
+
+export const getUserPujaBookings = async () => {
+    const response = await api.get("/puja/getallbookings");
+    return response.data;
+};
+
+// Admin: Get all puja bookings
+export const getAdminAllPujaBookings = async () => {
+    const response = await api.get("/puja/admin/all");
+    return response.data;
+};
+
+// Admin: Update puja booking status
+export const updatePujaBookingStatus = async (id, status) => {
+    const response = await api.put(`/puja/status/${id}`, { status });
+    return response.data;
+};
+
+// Admin: Get dashboard stats
+export const getAdminStats = async (year) => {
+    const response = await api.get(`/order/admin/stats${year ? `?year=${year}` : ''}`);
+    return response.data;
+};
+
+// ==================== Payment APIs ====================
+export const getRazorpayKey = async () => {
+    const response = await api.get("/payment/getKey");
+    return response.data;
+};
+
+export const createPaymentOrder = async (amount) => {
+    const response = await api.post("/payment/process", { amount });
+    return response.data;
+};
+
+export const verifyPayment = async (paymentData) => {
+    const response = await api.post("/payment/verify", paymentData);
+    return response.data;
+};
+
 export default api;
+

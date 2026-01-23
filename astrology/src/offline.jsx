@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
+import { getRazorpayKey, createPaymentOrder, verifyPayment, createConsultancyRequest } from "./api/api";
 
 const OfflineConsultation = () => {
   const navigate = useNavigate();
@@ -17,6 +18,7 @@ const OfflineConsultation = () => {
   const [userInput, setUserInput] = useState("");
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const [isNavOpen, setIsNavOpen] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
 
   useEffect(() => {
     if (!isChatOpen && messages.length === 0) {
@@ -31,42 +33,92 @@ const OfflineConsultation = () => {
     setFormData((prev) => ({ ...prev, [name]: value }));
   };
 
-  const handleFormSubmit = (e) => {
+  const handleFormSubmit = async (e) => {
     e.preventDefault();
-    if (Object.values(formData).every((field) => field.trim())) {
-      alert("Form submitted successfully! Proceeding to payment...");
+    if (!Object.values(formData).every((field) => field.trim())) {
+      alert("Please fill all fields.");
+      return;
+    }
+
+    setIsLoading(true);
+    try {
+      // Get Razorpay key from backend
+      const keyResponse = await getRazorpayKey();
+      if (!keyResponse.success) {
+        throw new Error("Failed to get payment key");
+      }
+
+      // Create order on backend
+      const orderResponse = await createPaymentOrder(1000); // ₹1000
+      if (!orderResponse.success) {
+        throw new Error("Failed to create payment order");
+      }
+
       const options = {
-        key: "rzp_test_1234567890",
-        amount: 100000, // ₹1000 in paise
-        currency: "INR",
+        key: keyResponse.key,
+        amount: orderResponse.order.amount,
+        currency: orderResponse.order.currency,
         name: "Jyotish Urja",
         description: "Offline Consultation",
-        handler: function (response) {
-          alert(`Payment successful! Payment ID: ${response.razorpay_payment_id}`);
-          alert("Consultation details submitted! Our team will contact you to schedule your in-person appointment.");
-          setFormData({
-            name: "",
-            dob: "",
-            timeOfBirth: "",
-            placeOfBirth: "",
-            areaOfConcern: "",
-          });
+        order_id: orderResponse.order.id,
+        handler: async function (response) {
+          try {
+            // Verify payment on backend
+            const verifyResponse = await verifyPayment({
+              razorpay_payment_id: response.razorpay_payment_id,
+              razorpay_order_id: response.razorpay_order_id,
+              razorpay_signature: response.razorpay_signature,
+            });
+
+            if (verifyResponse.success) {
+              // Create consultancy request after payment
+              await createConsultancyRequest({
+                consultancyType: "Offline Consultation",
+                name: formData.name,
+                dob: formData.dob,
+                birthTime: formData.timeOfBirth,
+                birthPlace: formData.placeOfBirth,
+                description: formData.areaOfConcern,
+                price: 1000,
+              });
+
+              alert("Payment has been done, you will get dates from us for date and time");
+              setFormData({
+                name: "",
+                dob: "",
+                timeOfBirth: "",
+                placeOfBirth: "",
+                areaOfConcern: "",
+              });
+            } else {
+              alert("Payment verification failed. Please contact support.");
+            }
+          } catch (error) {
+            console.error("Error verifying payment:", error);
+            alert("Payment verification failed. Please contact support.");
+          }
         },
         prefill: {
           name: formData.name,
-          email: "user@example.com",
-          contact: "9999999999",
         },
         theme: {
           color: "#d4af37",
         },
       };
+
       const rzp = new window.Razorpay(options);
+      rzp.on('payment.failed', function (response) {
+        alert("Payment failed. Please try again.");
+      });
       rzp.open();
-    } else {
-      alert("Please fill all fields.");
+    } catch (error) {
+      console.error("Error processing payment:", error);
+      alert("Failed to process payment. Please try again.");
+    } finally {
+      setIsLoading(false);
     }
   };
+
 
   const toggleChat = () => {
     setIsChatOpen(!isChatOpen);
@@ -1697,13 +1749,13 @@ const OfflineConsultation = () => {
         {/* Chatbot */}
         <div className="chatbot-button" onClick={toggleChat}>
           <svg viewBox="0 0 24 24" fill="currentColor">
-            <path d="M12 2c5.52 0 10 4.48 10 10s-4.48 10-10 10c-1.91 0-3.69-.55-5.2-1.49l-3.26 1.63a1 1 0 0 1-1.34-1.34l1.63-3.26C2.55 15.69 2 13.91 2 12 2 6.48 6.48 2 12 2zm0 2c-4.42 0-8 3.58-8 8 0 1.44.38 2.78 1.05 3.95l-.55 1.1 1.1.55c1.17-.67 2.51-1.05 3.95-1.05 4.42 0 8 3.58 8 8s-3.58 8-8 8zm-1 2h2v2h-2zm0 4h2v2h-2zm0 4h2v2h-2z"/>
+            <path d="M12 2c5.52 0 10 4.48 10 10s-4.48 10-10 10c-1.91 0-3.69-.55-5.2-1.49l-3.26 1.63a1 1 0 0 1-1.34-1.34l1.63-3.26C2.55 15.69 2 13.91 2 12 2 6.48 6.48 2 12 2zm0 2c-4.42 0-8 3.58-8 8 0 1.44.38 2.78 1.05 3.95l-.55 1.1 1.1.55c1.17-.67 2.51-1.05 3.95-1.05 4.42 0 8 3.58 8 8s-3.58 8-8 8zm-1 2h2v2h-2zm0 4h2v2h-2zm0 4h2v2h-2z" />
           </svg>
         </div>
         <div className="chatbot-container">
           <div className="chatbot-header">
             <svg viewBox="0 0 24 24" fill="currentColor">
-              <path d="M12 2c5.52 0 10 4.48 10 10s-4.48 10-10 10c-1.91 0-3.69-.55-5.2-1.49l-3.26 1.63a1 1 0 0 1-1.34-1.34l1.63-3.26C2.55 15.69 2 13.91 2 12 2 6.48 6.48 2 12 2zm0 2c-4.42 0-8 3.58-8 8 0 1.44.38 2.78 1.05 3.95l-.55 1.1 1.1.55c1.17-.67 2.51-1.05 3.95-1.05 4.42 0 8 3.58 8 8s-3.58 8-8 8zm-1 2h2v2h-2zm0 4h2v2h-2zm0 4h2v2h-2z"/>
+              <path d="M12 2c5.52 0 10 4.48 10 10s-4.48 10-10 10c-1.91 0-3.69-.55-5.2-1.49l-3.26 1.63a1 1 0 0 1-1.34-1.34l1.63-3.26C2.55 15.69 2 13.91 2 12 2 6.48 6.48 2 12 2zm0 2c-4.42 0-8 3.58-8 8 0 1.44.38 2.78 1.05 3.95l-.55 1.1 1.1.55c1.17-.67 2.51-1.05 3.95-1.05 4.42 0 8 3.58 8 8s-3.58 8-8 8zm-1 2h2v2h-2zm0 4h2v2h-2zm0 4h2v2h-2z" />
             </svg>
             <div>
               <h3>Jyoti</h3>

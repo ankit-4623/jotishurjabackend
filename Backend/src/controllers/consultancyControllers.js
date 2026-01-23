@@ -2,27 +2,21 @@ import ConsultancyModel from "../model/ConsultancyModel.js";
 
 export const createConsultancyRequest = async (req, res) => {
     try {
-        const { type, fulllName, dateofBirth, timeofBirth, placeofBirth, gender, areaOfConcern, price } = req.body;
+        const { consultancyType, name, email, dob, birthTime, birthPlace, description, price } = req.body;
 
-        const pendingConsultancyRequest = await ConsultancyModel.findOne({ userId: req.user._id, status: "pending" });
-        if (pendingConsultancyRequest) {
-            return res.status(400).json({ success: false, message: "You already have a pending consultancy request" });
-        }
         const newConsultancyRequest = new ConsultancyModel({
             userId: req.user._id,
-            type,
-            fulllName,
-            dateofBirth,
-            timeofBirth,
-            placeofBirth,
-            gender,
-            areaOfConcern,
-            price,
-            paidAt: Date.now()
+            consultancyType,
+            name,
+            email,
+            dob,
+            birthTime,
+            birthPlace,
+            description,
+            price: price || 0,
         });
 
         await newConsultancyRequest.save();
-
 
         res.status(201).json({ success: true, message: "Consultancy request created successfully", data: newConsultancyRequest });
     } catch (error) {

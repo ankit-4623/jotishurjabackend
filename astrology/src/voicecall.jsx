@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
+import { getRazorpayKey, createPaymentOrder, verifyPayment, createConsultancyRequest } from "./api/api";
 
 const VoiceCall = () => {
   const [formData, setFormData] = useState({
@@ -15,6 +16,7 @@ const VoiceCall = () => {
   const [messages, setMessages] = useState([]);
   const [userInput, setUserInput] = useState("");
   const [dropdownOpen, setDropdownOpen] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -33,46 +35,92 @@ const VoiceCall = () => {
     setFormData((prev) => ({ ...prev, [name]: value }));
   };
 
-  const handleFormSubmit = (e) => {
+  const handleFormSubmit = async (e) => {
     e.preventDefault();
-    if (Object.values(formData).every((field) => field.trim())) {
-      alert("Form submitted successfully! Proceeding to payment...");
+    if (!Object.values(formData).every((field) => field.trim())) {
+      alert("Please fill all fields.");
+      return;
+    }
+
+    setIsLoading(true);
+    try {
+      // Get Razorpay key from backend
+      const keyResponse = await getRazorpayKey();
+      if (!keyResponse.success) {
+        throw new Error("Failed to get payment key");
+      }
+
+      // Create order on backend
+      const orderResponse = await createPaymentOrder(1000); // ₹1000
+      if (!orderResponse.success) {
+        throw new Error("Failed to create payment order");
+      }
+
       const options = {
-        key: "rzp_test_1234567890",
-        amount: 100000, // ₹1000 in paise
-        currency: "INR",
+        key: keyResponse.key,
+        amount: orderResponse.order.amount,
+        currency: orderResponse.order.currency,
         name: "Jyotish Urja",
         description: "Voice Call Consultation",
-        handler: function (response) {
-          alert(
-            `Payment successful! Payment ID: ${response.razorpay_payment_id}`
-          );
-          alert(
-            "Consultation details submitted! Our team will contact you soon."
-          );
-          setFormData({
-            name: "",
-            dob: "",
-            timeOfBirth: "",
-            placeOfBirth: "",
-            areaOfConcern: "",
-          });
+        order_id: orderResponse.order.id,
+        handler: async function (response) {
+          try {
+            // Verify payment on backend
+            const verifyResponse = await verifyPayment({
+              razorpay_payment_id: response.razorpay_payment_id,
+              razorpay_order_id: response.razorpay_order_id,
+              razorpay_signature: response.razorpay_signature,
+            });
+
+            if (verifyResponse.success) {
+              // Create consultancy request after payment
+              await createConsultancyRequest({
+                consultancyType: "Voice Call Consultation",
+                name: formData.name,
+                dob: formData.dob,
+                birthTime: formData.timeOfBirth,
+                birthPlace: formData.placeOfBirth,
+                description: formData.areaOfConcern,
+                price: 1000,
+              });
+
+              alert("Payment has been done, you will get dates from us for date and time");
+              setFormData({
+                name: "",
+                dob: "",
+                timeOfBirth: "",
+                placeOfBirth: "",
+                areaOfConcern: "",
+              });
+            } else {
+              alert("Payment verification failed. Please contact support.");
+            }
+          } catch (error) {
+            console.error("Error verifying payment:", error);
+            alert("Payment verification failed. Please contact support.");
+          }
         },
         prefill: {
           name: formData.name,
-          email: "user@example.com",
-          contact: "9999999999",
         },
         theme: {
           color: "#d4af37",
         },
       };
+
       const rzp = new window.Razorpay(options);
+      rzp.on('payment.failed', function (response) {
+        alert("Payment failed. Please try again.");
+      });
       rzp.open();
-    } else {
-      alert("Please fill all fields.");
+    } catch (error) {
+      console.error("Error processing payment:", error);
+      alert("Failed to process payment. Please try again.");
+    } finally {
+      setIsLoading(false);
     }
   };
+
 
   const toggleChat = () => {
     setIsChatOpen(!isChatOpen);

@@ -22,6 +22,9 @@ import {
   getAllProducts,
   addProduct,
   logoutUser,
+  getAdminAllPujaBookings,
+  updatePujaBookingStatus,
+  getAdminStats,
 } from "./api/api";
 
 // Register Chart.js components
@@ -33,31 +36,6 @@ ChartJS.register(
   Tooltip,
   Legend
 );
-
-// Mock data for puja bookings (until backend API is implemented)
-const mockPujaBookings = [
-  {
-    id: 1,
-    name: "Puja for Health",
-    customer: "John Doe",
-    date: "2025-10-01",
-    status: "pending",
-  },
-  {
-    id: 2,
-    name: "Puja for Wealth",
-    customer: "Jane Smith",
-    date: "2025-10-05",
-    status: "completed",
-  },
-  {
-    id: 3,
-    name: "Puja for Peace",
-    customer: "Alice Johnson",
-    date: "2025-10-10",
-    status: "pending",
-  },
-];
 
 const AdminPanel = () => {
   const navigate = useNavigate();
@@ -95,10 +73,21 @@ const AdminPanel = () => {
   const [orders, setOrders] = useState([]);
   const [consultancies, setConsultancies] = useState([]);
   const [products, setProducts] = useState([]);
+  const [pujaBookings, setPujaBookings] = useState([]);
+  const [adminStats, setAdminStats] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [successMessage, setSuccessMessage] = useState("");
 
   const dashboardRef = useRef(null);
+
+  // Auto-dismiss success message after 3 seconds
+  useEffect(() => {
+    if (successMessage) {
+      const timer = setTimeout(() => setSuccessMessage(""), 3000);
+      return () => clearTimeout(timer);
+    }
+  }, [successMessage]);
 
   // Fetch data from backend on component mount
   useEffect(() => {
@@ -122,6 +111,18 @@ const AdminPanel = () => {
         const productsResponse = await getAllProducts();
         if (productsResponse.success) {
           setProducts(productsResponse.data);
+        }
+
+        // Fetch puja bookings
+        const pujaResponse = await getAdminAllPujaBookings();
+        if (pujaResponse.success) {
+          setPujaBookings(pujaResponse.data);
+        }
+
+        // Fetch admin stats for dashboard
+        const statsResponse = await getAdminStats();
+        if (statsResponse.success) {
+          setAdminStats(statsResponse.data);
         }
       } catch (err) {
         console.error("Error fetching admin data:", err);
@@ -173,6 +174,23 @@ const AdminPanel = () => {
     }
   };
 
+  // Handle status change for puja booking (API call)
+  const handlePujaStatusChange = async (id, newStatus) => {
+    try {
+      const response = await updatePujaBookingStatus(id, newStatus);
+      if (response.success) {
+        setPujaBookings((prev) =>
+          prev.map((item) =>
+            item._id === id ? { ...item, status: newStatus } : item
+          )
+        );
+      }
+    } catch (err) {
+      console.error("Error updating puja booking status:", err);
+      alert("Failed to update puja booking status");
+    }
+  };
+
   // Dashboard calculations using real data
   const filteredOrdersForDashboard = orders.filter(
     (order) =>
@@ -200,12 +218,8 @@ const AdminPanel = () => {
 
   const totalEarnings = totalOrderEarnings + totalConsultancyEarnings;
 
-  // Yearly revenue data (can be calculated from real orders if needed)
-  const revenueByYear = {
-    2023: [200, 300, 150, 400, 250, 500, 350, 450, 300, 400, 200, 600],
-    2024: [300, 400, 200, 500, 350, 600, 450, 550, 400, 500, 300, 700],
-    2025: [250, 350, 175, 450, 300, 550, 400, 500, 350, 450, 250, 650],
-  };
+  // Use real monthly revenue from admin stats, fallback to calculated data
+  const monthlyRevenue = adminStats?.monthlyRevenue || Array(12).fill(0);
 
   const earningsData = {
     labels: [
@@ -224,17 +238,8 @@ const AdminPanel = () => {
     ],
     datasets: [
       {
-        label: `Earnings ($) - ${dashboardYearFilter === "all" ? "All Years" : dashboardYearFilter
-          }`,
-        data:
-          dashboardYearFilter === "all"
-            ? revenueByYear[2023].map(
-              (val, idx) =>
-                val +
-                (revenueByYear[2024][idx] || 0) +
-                (revenueByYear[2025][idx] || 0)
-            )
-            : revenueByYear[dashboardYearFilter] || revenueByYear[2023],
+        label: `Earnings (₹) - ${adminStats?.year || new Date().getFullYear()}`,
+        data: monthlyRevenue,
         backgroundColor: "rgba(212, 175, 55, 0.6)",
         borderColor: "#d4af37",
         borderWidth: 1,
@@ -275,7 +280,7 @@ const AdminPanel = () => {
       order.orderStatus?.toLowerCase() === gemstoneOrderStatusFilter
   );
 
-  const filteredPujaBookings = mockPujaBookings.filter(
+  const filteredPujaBookings = pujaBookings.filter(
     (puja) => pujaStatusFilter === "all" || puja.status === pujaStatusFilter
   );
 
@@ -338,7 +343,7 @@ const AdminPanel = () => {
 
       const response = await addProduct(formData);
       if (response.success) {
-        alert("Gemstone uploaded successfully!");
+        setSuccessMessage("✅ Gemstone uploaded successfully!");
         setGemstoneData({
           name: "",
           rate: "",
@@ -354,14 +359,14 @@ const AdminPanel = () => {
       }
     } catch (err) {
       console.error("Error uploading gemstone:", err);
-      alert(err.response?.data?.message || "Failed to upload gemstone. Please try again.");
+      setSuccessMessage("❌ " + (err.response?.data?.message || "Failed to upload gemstone. Please try again."));
     }
   };
 
   // Handle gallery submission
   const handleGallerySubmit = (type) => {
-    alert(
-      `${type.charAt(0).toUpperCase() + type.slice(1)} uploaded successfully!`
+    setSuccessMessage(
+      `✅ ${type.charAt(0).toUpperCase() + type.slice(1)} uploaded successfully!`
     );
   };
 
@@ -1212,6 +1217,41 @@ const AdminPanel = () => {
         </div>
       </header>
 
+      {/* Success/Error Notification */}
+      {successMessage && (
+        <div className="notification-toast" style={{
+          position: 'fixed',
+          top: '100px',
+          left: '50%',
+          transform: 'translateX(-50%)',
+          background: successMessage.includes('❌')
+            ? 'linear-gradient(135deg, #e74c3c, #c0392b)'
+            : 'linear-gradient(135deg, #27ae60, #2ecc71)',
+          color: '#fff',
+          padding: '16px 32px',
+          borderRadius: '12px',
+          boxShadow: '0 8px 24px rgba(0,0,0,0.3)',
+          zIndex: 1000,
+          fontSize: '16px',
+          fontWeight: '600',
+          animation: 'slideIn 0.3s ease-out',
+        }}>
+          {successMessage}
+        </div>
+      )}
+      <style>{`
+        @keyframes slideIn {
+          from {
+            opacity: 0;
+            transform: translateX(-50%) translateY(-20px);
+          }
+          to {
+            opacity: 1;
+            transform: translateX(-50%) translateY(0);
+          }
+        }
+      `}</style>
+
       <div className="admin-panel">
         <h1>Admin Panel - Jyotish Urja</h1>
         <div className="admin-content">
@@ -1649,52 +1689,86 @@ const AdminPanel = () => {
                     >
                       <option value="all">All</option>
                       <option value="pending">Pending</option>
+                      <option value="confirmed">Confirmed</option>
                       <option value="completed">Completed</option>
+                      <option value="cancelled">Cancelled</option>
                     </select>
                   </div>
                 </div>
-                <p>Total Puja Bookings: {filteredPujaBookings.length}</p>
-                <table>
-                  <thead>
-                    <tr>
-                      <th>ID</th>
-                      <th>Puja Name</th>
-                      <th>Customer</th>
-                      <th>Date</th>
-                      <th>Status</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {filteredPujaBookings.map((puja) => (
-                      <tr key={puja.id}>
-                        <td>{puja.id}</td>
-                        <td>{puja.name}</td>
-                        <td>{puja.customer}</td>
-                        <td>{puja.date}</td>
-                        <td>{puja.status}</td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-                <div className="responsive-table">
-                  {filteredPujaBookings.map((puja) => (
-                    <div key={puja.id} className="table-card">
-                      <h4>Puja #{puja.id}</h4>
-                      <p>
-                        <strong>Name:</strong> {puja.name}
-                      </p>
-                      <p>
-                        <strong>Customer:</strong> {puja.customer}
-                      </p>
-                      <p>
-                        <strong>Date:</strong> {puja.date}
-                      </p>
-                      <p>
-                        <strong>Status:</strong> {puja.status}
-                      </p>
+                {loading ? (
+                  <p>Loading puja bookings...</p>
+                ) : (
+                  <>
+                    <p>Total Puja Bookings: {filteredPujaBookings.length}</p>
+                    <table>
+                      <thead>
+                        <tr>
+                          <th>ID</th>
+                          <th>Puja Name</th>
+                          <th>Customer</th>
+                          <th>Price</th>
+                          <th>Date</th>
+                          <th>Status</th>
+                          <th>Change Status</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {filteredPujaBookings.map((puja) => (
+                          <tr key={puja._id}>
+                            <td>{puja._id?.slice(-6)}</td>
+                            <td>{puja.pujaName}</td>
+                            <td>{puja.customerName || puja.user?.name || 'N/A'}</td>
+                            <td>₹{puja.price || 0}</td>
+                            <td>{puja.scheduledDate ? new Date(puja.scheduledDate).toLocaleDateString() : 'N/A'}</td>
+                            <td>{puja.status}</td>
+                            <td>
+                              <select
+                                value={puja.status}
+                                onChange={(e) => handlePujaStatusChange(puja._id, e.target.value)}
+                              >
+                                <option value="pending">Pending</option>
+                                <option value="confirmed">Confirmed</option>
+                                <option value="completed">Completed</option>
+                                <option value="cancelled">Cancelled</option>
+                              </select>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                    <div className="responsive-table">
+                      {filteredPujaBookings.map((puja) => (
+                        <div key={puja._id} className="table-card">
+                          <h4>Puja #{puja._id?.slice(-6)}</h4>
+                          <p>
+                            <strong>Name:</strong> {puja.pujaName}
+                          </p>
+                          <p>
+                            <strong>Customer:</strong> {puja.customerName || puja.user?.name || 'N/A'}
+                          </p>
+                          <p>
+                            <strong>Price:</strong> ₹{puja.price || 0}
+                          </p>
+                          <p>
+                            <strong>Date:</strong> {puja.scheduledDate ? new Date(puja.scheduledDate).toLocaleDateString() : 'N/A'}
+                          </p>
+                          <p>
+                            <strong>Status:</strong> {puja.status}
+                          </p>
+                          <select
+                            value={puja.status}
+                            onChange={(e) => handlePujaStatusChange(puja._id, e.target.value)}
+                          >
+                            <option value="pending">Pending</option>
+                            <option value="confirmed">Confirmed</option>
+                            <option value="completed">Completed</option>
+                            <option value="cancelled">Cancelled</option>
+                          </select>
+                        </div>
+                      ))}
                     </div>
-                  ))}
-                </div>
+                  </>
+                )}
               </div>
             )}
 

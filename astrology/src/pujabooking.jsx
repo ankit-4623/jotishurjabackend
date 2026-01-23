@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
+import { createPujaBooking } from "./api/api";
 
 const translations = {
   en: {
@@ -108,6 +109,7 @@ const PujaBooking = () => {
   const [language, setLanguage] = useState("en");
   const [isNavOpen, setIsNavOpen] = useState(false);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [formLoading, setFormLoading] = useState(false);
   const [formData, setFormData] = useState({
     name: "",
     phone: "",
@@ -166,33 +168,33 @@ const PujaBooking = () => {
     const responses =
       language === "en"
         ? {
-            "Ganesh Puja":
-              "Ganesh Puja is dedicated to Lord Ganesha. Please use the form to enquire about booking details.",
-            "Durga Puja":
-              "Durga Puja is dedicated to Goddess Durga. Please use the form to enquire about booking details.",
-            "Lakshmi Puja":
-              "Lakshmi Puja is dedicated to Goddess Lakshmi. Please use the form to enquire about booking details.",
-            "Shiva Puja":
-              "Shiva Puja is dedicated to Lord Shiva. Please use the form to enquire about booking details.",
-            "Hanuman Puja":
-              "Hanuman Puja is dedicated to Lord Hanuman. Please use the form to enquire about booking details.",
-            "Saraswati Puja":
-              "Saraswati Puja is dedicated to Goddess Saraswati. Please use the form to enquire about booking details.",
-          }
+          "Ganesh Puja":
+            "Ganesh Puja is dedicated to Lord Ganesha. Please use the form to enquire about booking details.",
+          "Durga Puja":
+            "Durga Puja is dedicated to Goddess Durga. Please use the form to enquire about booking details.",
+          "Lakshmi Puja":
+            "Lakshmi Puja is dedicated to Goddess Lakshmi. Please use the form to enquire about booking details.",
+          "Shiva Puja":
+            "Shiva Puja is dedicated to Lord Shiva. Please use the form to enquire about booking details.",
+          "Hanuman Puja":
+            "Hanuman Puja is dedicated to Lord Hanuman. Please use the form to enquire about booking details.",
+          "Saraswati Puja":
+            "Saraswati Puja is dedicated to Goddess Saraswati. Please use the form to enquire about booking details.",
+        }
         : {
-            "गणेश पूजा":
-              "गणेश पूजा भगवान गणेश को समर्पित है। बुकिंग विवरण के लिए कृपया फॉर्म का उपयोग करें।",
-            "दुर्गा पूजा":
-              "दुर्गा पूजा देवी दुर्गा को समर्पित है। बुकिंग विवरण के लिए कृपया फॉर्म का उपयोग करें।",
-            "लक्ष्मी पूजा":
-              "लक्ष्मी पूजा देवी लक्ष्मी को समर्पित है। बुकिंग विवरण के लिए कृपया फॉर्म का उपयोग करें।",
-            "शिव पूजा":
-              "शिव पूजा भगवान शिव को समर्पित है। बुकिंग विवरण के लिए कृपया फॉर्म का उपयोग करें।",
-            "हनुमान पूजा":
-              "हनुमान पूजा भगवान हनुमान को समर्पित है। बुकिंग विवरण के लिए कृपया फॉर्म का उपयोग करें।",
-            "सरस्वती पूजा":
-              "सरस्वती पूजा देवी सरस्वती को समर्पित है। बुकिंग विवरण के लिए कृपया फॉर्म का उपयोग करें।",
-          };
+          "गणेश पूजा":
+            "गणेश पूजा भगवान गणेश को समर्पित है। बुकिंग विवरण के लिए कृपया फॉर्म का उपयोग करें।",
+          "दुर्गा पूजा":
+            "दुर्गा पूजा देवी दुर्गा को समर्पित है। बुकिंग विवरण के लिए कृपया फॉर्म का उपयोग करें।",
+          "लक्ष्मी पूजा":
+            "लक्ष्मी पूजा देवी लक्ष्मी को समर्पित है। बुकिंग विवरण के लिए कृपया फॉर्म का उपयोग करें।",
+          "शिव पूजा":
+            "शिव पूजा भगवान शिव को समर्पित है। बुकिंग विवरण के लिए कृपया फॉर्म का उपयोग करें।",
+          "हनुमान पूजा":
+            "हनुमान पूजा भगवान हनुमान को समर्पित है। बुकिंग विवरण के लिए कृपया फॉर्म का उपयोग करें।",
+          "सरस्वती पूजा":
+            "सरस्वती पूजा देवी सरस्वती को समर्पित है। बुकिंग विवरण के लिए कृपया फॉर्म का उपयोग करें।",
+        };
     const botResponseText =
       responses[text] ||
       "Please specify a puja name or use the booking form for more details.";
@@ -215,20 +217,36 @@ const PujaBooking = () => {
     setFormData({ ...formData, [name]: value });
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    // Simulate sending form data to admin
-    console.log("Form submitted to admin:", formData);
-    alert("Your enquiry has been submitted! Our team will contact you soon.");
-    setIsModalOpen(false);
-    setFormData({
-      name: "",
-      phone: "",
-      email: "",
-      pujaType: "",
-      description: "",
-      mode: "online",
-    });
+    setFormLoading(true);
+    try {
+      const response = await createPujaBooking({
+        name: formData.name,
+        phone: formData.phone,
+        email: formData.email,
+        pujaType: formData.pujaType,
+        description: formData.description,
+        mode: formData.mode,
+      });
+      if (response.success) {
+        alert("Your puja booking has been submitted! Our team will contact you soon.");
+        setIsModalOpen(false);
+        setFormData({
+          name: "",
+          phone: "",
+          email: "",
+          pujaType: "",
+          description: "",
+          mode: "online",
+        });
+      }
+    } catch (error) {
+      console.error("Error submitting puja booking:", error);
+      alert("Failed to submit booking. Please try again.");
+    } finally {
+      setFormLoading(false);
+    }
   };
 
   const toggleLanguage = () => {
@@ -252,11 +270,10 @@ const PujaBooking = () => {
           }
 
           body {
-            font-family: ${
-              language === "hi"
-                ? "'Noto Serif Devanagari', serif"
-                : "'Source Sans 3', sans-serif"
-            };
+            font-family: ${language === "hi"
+            ? "'Noto Serif Devanagari', serif"
+            : "'Source Sans 3', sans-serif"
+          };
             background: linear-gradient(135deg, #0d1b2a 0%, #1b263b 50%, #415a77 100%);
             color: #faf0e6;
             overflow-x: hidden;
@@ -327,11 +344,10 @@ const PujaBooking = () => {
             align-items: center;
             font-size: 22px;
             font-weight: 700;
-            font-family: ${
-              language === "hi"
-                ? "'Noto Serif Devanagari', serif"
-                : "'Playfair Display', serif"
-            };
+            font-family: ${language === "hi"
+            ? "'Noto Serif Devanagari', serif"
+            : "'Playfair Display', serif"
+          };
             letter-spacing: 1.5px;
             text-transform: uppercase;
             color: #d4af37;
@@ -383,11 +399,10 @@ const PujaBooking = () => {
             overflow: hidden;
             text-transform: uppercase;
             letter-spacing: 0.8px;
-            font-family: ${
-              language === "hi"
-                ? "'Noto Serif Devanagari', serif"
-                : "'Source Sans 3', sans-serif"
-            };
+            font-family: ${language === "hi"
+            ? "'Noto Serif Devanagari', serif"
+            : "'Source Sans 3', sans-serif"
+          };
           }
 
           .nav a::before {
@@ -501,11 +516,10 @@ const PujaBooking = () => {
             font-weight: 500;
             margin-bottom: 5px;
             border: 1px solid transparent;
-            font-family: ${
-              language === "hi"
-                ? "'Noto Serif Devanagari', serif"
-                : "'Source Sans 3', sans-serif"
-            };
+            font-family: ${language === "hi"
+            ? "'Noto Serif Devanagari', serif"
+            : "'Source Sans 3', sans-serif"
+          };
           }
 
           .dropdown-item:hover {
@@ -535,11 +549,10 @@ const PujaBooking = () => {
           }
 
           .hero-content h1 {
-            font-family: ${
-              language === "hi"
-                ? "'Noto Serif Devanagari', serif"
-                : "'Playfair Display', serif"
-            };
+            font-family: ${language === "hi"
+            ? "'Noto Serif Devanagari', serif"
+            : "'Playfair Display', serif"
+          };
             font-size: clamp(36px, 6vw, 48px);
             font-weight: 700;
             color: #d4af37;
@@ -550,11 +563,10 @@ const PujaBooking = () => {
           }
 
           .hero-content p {
-            font-family: ${
-              language === "hi"
-                ? "'Noto Serif Devanagari', serif"
-                : "'Crimson Text', serif"
-            };
+            font-family: ${language === "hi"
+            ? "'Noto Serif Devanagari', serif"
+            : "'Crimson Text', serif"
+          };
             font-size: clamp(18px, 3vw, 24px);
             color: rgba(212, 175, 55, 0.9);
             margin-bottom: 30px;
@@ -601,11 +613,10 @@ const PujaBooking = () => {
           }
 
           .section-title {
-            font-family: ${
-              language === "hi"
-                ? "'Noto Serif Devanagari', serif"
-                : "'Playfair Display', serif"
-            };
+            font-family: ${language === "hi"
+            ? "'Noto Serif Devanagari', serif"
+            : "'Playfair Display', serif"
+          };
             font-size: clamp(32px, 5vw, 40px);
             font-weight: 700;
             text-align: center;
@@ -643,11 +654,10 @@ const PujaBooking = () => {
             text-align: center;
             color: #d4af37;
             margin-bottom: 20px;
-            font-family: ${
-              language === "hi"
-                ? "'Noto Serif Devanagari', serif"
-                : "'Playfair Display', serif"
-            };
+            font-family: ${language === "hi"
+            ? "'Noto Serif Devanagari', serif"
+            : "'Playfair Display', serif"
+          };
             font-size: clamp(24px, 4vw, 32px);
           }
 
@@ -666,11 +676,10 @@ const PujaBooking = () => {
             background: rgba(26, 35, 50, 0.8);
             color: #faf0e6;
             font-size: 14px;
-            font-family: ${
-              language === "hi"
-                ? "'Noto Serif Devanagari', serif"
-                : "'Source Sans 3', sans-serif"
-            };
+            font-family: ${language === "hi"
+            ? "'Noto Serif Devanagari', serif"
+            : "'Source Sans 3', sans-serif"
+          };
           }
 
           .form-container textarea {
@@ -707,11 +716,10 @@ const PujaBooking = () => {
             cursor: pointer;
             font-weight: 600;
             transition: all 0.3s ease;
-            font-family: ${
-              language === "hi"
-                ? "'Noto Serif Devanagari', serif"
-                : "'Source Sans 3', sans-serif"
-            };
+            font-family: ${language === "hi"
+            ? "'Noto Serif Devanagari', serif"
+            : "'Source Sans 3', sans-serif"
+          };
           }
 
           .form-container button:hover {
@@ -768,11 +776,10 @@ const PujaBooking = () => {
           }
 
           .usp-card h3 {
-            font-family: ${
-              language === "hi"
-                ? "'Noto Serif Devanagari', serif"
-                : "'Playfair Display', serif"
-            };
+            font-family: ${language === "hi"
+            ? "'Noto Serif Devanagari', serif"
+            : "'Playfair Display', serif"
+          };
             font-size: 20px;
             font-weight: 700;
             color: #d4af37;
@@ -785,11 +792,10 @@ const PujaBooking = () => {
             font-size: 14px;
             color: rgba(212, 175, 55, 0.9);
             line-height: 1.6;
-            font-family: ${
-              language === "hi"
-                ? "'Noto Serif Devanagari', serif"
-                : "'Source Sans 3', sans-serif"
-            };
+            font-family: ${language === "hi"
+            ? "'Noto Serif Devanagari', serif"
+            : "'Source Sans 3', sans-serif"
+          };
           }
 
           .usp-icon {
@@ -827,11 +833,10 @@ const PujaBooking = () => {
           }
 
           .footer-logo {
-            font-family: ${
-              language === "hi"
-                ? "'Noto Serif Devanagari', serif"
-                : "'Playfair Display', serif"
-            };
+            font-family: ${language === "hi"
+            ? "'Noto Serif Devanagari', serif"
+            : "'Playfair Display', serif"
+          };
             font-size: 32px;
             font-weight: 700;
             color: #d4af37;
@@ -847,11 +852,10 @@ const PujaBooking = () => {
             max-width: 600px;
             line-height: 1.6;
             text-align: center;
-            font-family: ${
-              language === "hi"
-                ? "'Noto Serif Devanagari', serif"
-                : "'Source Sans 3', sans-serif"
-            };
+            font-family: ${language === "hi"
+            ? "'Noto Serif Devanagari', serif"
+            : "'Source Sans 3', sans-serif"
+          };
           }
 
           .footer-links {
@@ -871,11 +875,10 @@ const PujaBooking = () => {
             border-radius: 15px;
             transition: all 0.3s ease;
             min-height: 36px;
-            font-family: ${
-              language === "hi"
-                ? "'Noto Serif Devanagari', serif"
-                : "'Source Sans 3', sans-serif"
-            };
+            font-family: ${language === "hi"
+            ? "'Noto Serif Devanagari', serif"
+            : "'Source Sans 3', sans-serif"
+          };
           }
 
           .footer-links a:hover {
@@ -891,11 +894,10 @@ const PujaBooking = () => {
             font-size: 13px;
             width: 100%;
             text-align: center;
-            font-family: ${
-              language === "hi"
-                ? "'Noto Serif Devanagari', serif"
-                : "'Source Sans 3', sans-serif"
-            };
+            font-family: ${language === "hi"
+            ? "'Noto Serif Devanagari', serif"
+            : "'Source Sans 3', sans-serif"
+          };
           }
 
           .chatbot-button {
@@ -960,11 +962,10 @@ const PujaBooking = () => {
           }
 
           .chatbot-header h3 {
-            font-family: ${
-              language === "hi"
-                ? "'Noto Serif Devanagari', serif"
-                : "'Playfair Display', serif"
-            };
+            font-family: ${language === "hi"
+            ? "'Noto Serif Devanagari', serif"
+            : "'Playfair Display', serif"
+          };
             font-size: 18px;
             color: #1a2332;
             font-weight: 700;
@@ -976,11 +977,10 @@ const PujaBooking = () => {
             font-size: 11px;
             color: #1a2332;
             font-style: italic;
-            font-family: ${
-              language === "hi"
-                ? "'Noto Serif Devanagari', serif"
-                : "'Source Sans 3', sans-serif"
-            };
+            font-family: ${language === "hi"
+            ? "'Noto Serif Devanagari', serif"
+            : "'Source Sans 3', sans-serif"
+          };
           }
 
           .chatbot-messages {
@@ -998,11 +998,10 @@ const PujaBooking = () => {
             border-radius: 12px;
             font-size: 13px;
             line-height: 1.5;
-            font-family: ${
-              language === "hi"
-                ? "'Noto Serif Devanagari', serif"
-                : "'Source Sans 3', sans-serif"
-            };
+            font-family: ${language === "hi"
+            ? "'Noto Serif Devanagari', serif"
+            : "'Source Sans 3', sans-serif"
+          };
           }
 
           .message.user {
@@ -1041,11 +1040,10 @@ const PujaBooking = () => {
             flex: 1;
             min-width: 90px;
             min-height: 36px;
-            font-family: ${
-              language === "hi"
-                ? "'Noto Serif Devanagari', serif"
-                : "'Source Sans 3', sans-serif"
-            };
+            font-family: ${language === "hi"
+            ? "'Noto Serif Devanagari', serif"
+            : "'Source Sans 3', sans-serif"
+          };
           }
 
           .quick-button:hover {
@@ -1071,11 +1069,10 @@ const PujaBooking = () => {
             outline: none;
             transition: all 0.3s ease;
             min-height: 36px;
-            font-family: ${
-              language === "hi"
-                ? "'Noto Serif Devanagari', serif"
-                : "'Source Sans 3', sans-serif"
-            };
+            font-family: ${language === "hi"
+            ? "'Noto Serif Devanagari', serif"
+            : "'Source Sans 3', sans-serif"
+          };
           }
 
           .chatbot-input:focus {
@@ -1094,11 +1091,10 @@ const PujaBooking = () => {
             transition: all 0.3s ease;
             font-weight: 600;
             min-height: 36px;
-            font-family: ${
-              language === "hi"
-                ? "'Noto Serif Devanagari', serif"
-                : "'Source Sans 3', sans-serif"
-            };
+            font-family: ${language === "hi"
+            ? "'Noto Serif Devanagari', serif"
+            : "'Source Sans 3', sans-serif"
+          };
           }
 
           .chatbot-send-button:hover {

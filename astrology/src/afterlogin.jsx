@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
-import { logoutUser } from "./api/api";
+import { logoutUser, createConsultancyRequest } from "./api/api";
 import heroImage from "./assets/gaurav sir background.png";
 import diwaliBanner from "./assets/diwali-astrology-offer-banner.jpg";
 import gemstoneBanner from "./assets/gemstone-collection-banner.jpg";
@@ -260,6 +260,7 @@ const AfterLogin = () => {
   const [messages, setMessages] = useState([]);
   const [userInput, setUserInput] = useState("");
   const [language, setLanguage] = useState("en");
+  const [contactLoading, setContactLoading] = useState(false);
   const location = useLocation();
 
   const slides = [
@@ -319,12 +320,28 @@ const AfterLogin = () => {
     }
   };
 
-  const handleContactSubmit = (e) => {
+  const handleContactSubmit = async (e) => {
     e.preventDefault();
-    alert("Message sent successfully!");
-    setContactName("");
-    setContactEmail("");
-    setContactMessage("");
+    setContactLoading(true);
+    try {
+      const response = await createConsultancyRequest({
+        name: contactName,
+        email: contactEmail,
+        description: contactMessage,
+        consultancyType: "Contact Form",
+      });
+      if (response.success) {
+        alert("Message sent successfully! We will get back to you soon.");
+        setContactName("");
+        setContactEmail("");
+        setContactMessage("");
+      }
+    } catch (error) {
+      console.error("Error sending message:", error);
+      alert("Failed to send message. Please try again.");
+    } finally {
+      setContactLoading(false);
+    }
   };
 
   const toggleChat = () => {

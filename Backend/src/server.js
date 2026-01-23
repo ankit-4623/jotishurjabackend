@@ -12,9 +12,10 @@ import cookieParser from "cookie-parser";
 import Usercart from './route/cartRoute.js'
 import Orders from './route/orderRoutes.js'
 import consultancyRoute from "./route/consultancyRoute.js";
+import pujaBookingRoute from "./route/pujaBookingRoute.js";
 import { rateLimitmiddleware } from "./middlewares/rateLimit.js";
 import serviceRoute from "./route/serviceroute.js";
-// import paymentRoute from './route/paymentRoute.js'
+import paymentRoute from './route/paymentRoute.js'
 
 // Get the directory name for ES modules
 const __filename = fileURLToPath(import.meta.url);
@@ -41,7 +42,9 @@ app.use("/api/carts", Usercart);
 app.use("/api/address", AdressCart);
 app.use("/api/order", Orders);
 // app.use("/api/payment", paymentRoute);
+app.use("/api/payment", paymentRoute);
 app.use('/api/consultancy', consultancyRoute)
+app.use('/api/puja', pujaBookingRoute)
 app.use('/api/services', serviceRoute)
 
 

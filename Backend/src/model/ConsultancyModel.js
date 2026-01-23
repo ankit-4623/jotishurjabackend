@@ -7,37 +7,18 @@ const consultancyRequestSchema = new mongoose.Schema(
       ref: "User",
       required: true,
     },
-    type: { type: String, required: true },
-    fulllName: { type: String, required: true },
-    dateofBirth: { type: Date, required: true },
-    timeofBirth: { type: String, required: true },
-    placeofBirth: { type: String, required: true },
-    gender: { type: String, required: true },
-    areaOfConcern: { type: String, required: true },
+    consultancyType: { type: String, required: true },
+    name: { type: String, required: true },
+    email: { type: String, default: "" },
+    dob: { type: String, default: "" },
+    birthTime: { type: String, default: "" },
+    birthPlace: { type: String, default: "" },
+    description: { type: String, default: "" },
+    price: { type: Number, default: 0 },
     status: {
       type: String,
-      enum: ["pending", "accepted", "rejected"],
+      enum: ["pending", "accepted", "rejected", "completed"],
       default: "pending",
-    },
-    paymentInfo: {
-      id: {
-        type: String,
-        default: "",
-      },
-      status: {
-        type: String,
-        required: true,
-        default: "pending",
-      },
-    },
-    paidAt: {
-      type: Date,
-      required: true,
-    },
-    price: {
-      type: Number,
-      required: true,
-      default: 0,
     },
   },
   { timestamps: true }
@@ -49,3 +30,4 @@ const ConsultancyRequest = mongoose.model(
 );
 
 export default ConsultancyRequest;
+

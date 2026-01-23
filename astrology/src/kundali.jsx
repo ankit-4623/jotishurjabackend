@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
+import { createConsultancyRequest } from "./api/api";
 
 const translations = {
   en: {
@@ -114,6 +115,7 @@ const AstroSolutions = () => {
   const [language, setLanguage] = useState("en");
   const [isNavOpen, setIsNavOpen] = useState(false);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [formLoading, setFormLoading] = useState(false);
   const [formData, setFormData] = useState({
     name: "",
     dob: "",
@@ -210,19 +212,36 @@ const AstroSolutions = () => {
     setFormData({ ...formData, [name]: value });
   };
 
-  const handleFormSubmit = (e) => {
+  const handleFormSubmit = async (e) => {
     e.preventDefault();
-    console.log("Form submitted:", formData);
-    alert("Your request has been submitted! Admin will contact you.");
-    setIsModalOpen(false);
-    setFormData({
-      name: "",
-      dob: "",
-      birthTime: "",
-      birthPlace: "",
-      solutionType: "",
-    });
-    setSelectedSolution(null);
+    setFormLoading(true);
+    try {
+      const response = await createConsultancyRequest({
+        name: formData.name,
+        dob: formData.dob,
+        birthTime: formData.birthTime,
+        birthPlace: formData.birthPlace,
+        consultancyType: formData.solutionType,
+        price: selectedSolution?.price || 0,
+      });
+      if (response.success) {
+        alert("Your request has been submitted! Admin will contact you.");
+        setIsModalOpen(false);
+        setFormData({
+          name: "",
+          dob: "",
+          birthTime: "",
+          birthPlace: "",
+          solutionType: "",
+        });
+        setSelectedSolution(null);
+      }
+    } catch (error) {
+      console.error("Error submitting request:", error);
+      alert("Failed to submit request. Please try again.");
+    } finally {
+      setFormLoading(false);
+    }
   };
 
   const toggleLanguage = () => {
@@ -246,11 +265,10 @@ const AstroSolutions = () => {
           }
 
           body {
-            font-family: ${
-              language === "hi"
-                ? "'Noto Serif Devanagari', serif"
-                : "'Source Sans 3', sans-serif"
-            };
+            font-family: ${language === "hi"
+            ? "'Noto Serif Devanagari', serif"
+            : "'Source Sans 3', sans-serif"
+          };
             background: linear-gradient(135deg, #0d1b2a 0%, #1b263b 50%, #415a77 100%);
             color: #faf0e6;
             overflow-x: hidden;
@@ -321,11 +339,10 @@ const AstroSolutions = () => {
             align-items: center;
             font-size: 22px;
             font-weight: 700;
-            font-family: ${
-              language === "hi"
-                ? "'Noto Serif Devanagari', serif"
-                : "'Playfair Display', serif"
-            };
+            font-family: ${language === "hi"
+            ? "'Noto Serif Devanagari', serif"
+            : "'Playfair Display', serif"
+          };
             letter-spacing: 1.5px;
             text-transform: uppercase;
             color: #d4af37;
@@ -377,11 +394,10 @@ const AstroSolutions = () => {
             overflow: hidden;
             text-transform: uppercase;
             letter-spacing: 0.8px;
-            font-family: ${
-              language === "hi"
-                ? "'Noto Serif Devanagari', serif"
-                : "'Source Sans 3', sans-serif"
-            };
+            font-family: ${language === "hi"
+            ? "'Noto Serif Devanagari', serif"
+            : "'Source Sans 3', sans-serif"
+          };
           }
 
           .nav a::before {
@@ -495,11 +511,10 @@ const AstroSolutions = () => {
             font-weight: 500;
             margin-bottom: 5px;
             border: 1px solid transparent;
-            font-family: ${
-              language === "hi"
-                ? "'Noto Serif Devanagari', serif"
-                : "'Source Sans 3', sans-serif"
-            };
+            font-family: ${language === "hi"
+            ? "'Noto Serif Devanagari', serif"
+            : "'Source Sans 3', sans-serif"
+          };
           }
 
           .dropdown-item:hover {
@@ -529,11 +544,10 @@ const AstroSolutions = () => {
           }
 
           .hero-content h1 {
-            font-family: ${
-              language === "hi"
-                ? "'Noto Serif Devanagari', serif"
-                : "'Playfair Display', serif"
-            };
+            font-family: ${language === "hi"
+            ? "'Noto Serif Devanagari', serif"
+            : "'Playfair Display', serif"
+          };
             font-size: clamp(36px, 6vw, 48px);
             font-weight: 700;
             color: #d4af37;
@@ -544,11 +558,10 @@ const AstroSolutions = () => {
           }
 
           .hero-content p {
-            font-family: ${
-              language === "hi"
-                ? "'Noto Serif Devanagari', serif"
-                : "'Crimson Text', serif"
-            };
+            font-family: ${language === "hi"
+            ? "'Noto Serif Devanagari', serif"
+            : "'Crimson Text', serif"
+          };
             font-size: clamp(18px, 3vw, 24px);
             color: rgba(212, 175, 55, 0.9);
             margin-bottom: 30px;
@@ -595,11 +608,10 @@ const AstroSolutions = () => {
           }
 
           .section-title {
-            font-family: ${
-              language === "hi"
-                ? "'Noto Serif Devanagari', serif"
-                : "'Playfair Display', serif"
-            };
+            font-family: ${language === "hi"
+            ? "'Noto Serif Devanagari', serif"
+            : "'Playfair Display', serif"
+          };
             font-size: clamp(32px, 5vw, 40px);
             font-weight: 700;
             text-align: center;
@@ -638,11 +650,10 @@ const AstroSolutions = () => {
             background: rgba(26, 35, 50, 0.8);
             color: #faf0e6;
             transition: all 0.3s ease;
-            font-family: ${
-              language === "hi"
-                ? "'Noto Serif Devanagari', serif"
-                : "'Source Sans 3', sans-serif"
-            };
+            font-family: ${language === "hi"
+            ? "'Noto Serif Devanagari', serif"
+            : "'Source Sans 3', sans-serif"
+          };
           }
 
           .search-input:focus {
@@ -721,11 +732,10 @@ const AstroSolutions = () => {
           }
 
           .solution-card h3 {
-            font-family: ${
-              language === "hi"
-                ? "'Noto Serif Devanagari', serif"
-                : "'Playfair Display', serif"
-            };
+            font-family: ${language === "hi"
+            ? "'Noto Serif Devanagari', serif"
+            : "'Playfair Display', serif"
+          };
             font-size: 20px;
             font-weight: 700;
             color: #d4af37;
@@ -739,11 +749,10 @@ const AstroSolutions = () => {
             color: rgba(212, 175, 55, 0.9);
             margin-bottom: 10px;
             line-height: 1.6;
-            font-family: ${
-              language === "hi"
-                ? "'Noto Serif Devanagari', serif"
-                : "'Source Sans 3', sans-serif"
-            };
+            font-family: ${language === "hi"
+            ? "'Noto Serif Devanagari', serif"
+            : "'Source Sans 3', sans-serif"
+          };
           }
 
           .solution-card .price {
@@ -765,11 +774,10 @@ const AstroSolutions = () => {
             transition: all 0.3s ease;
             text-transform: uppercase;
             letter-spacing: 1px;
-            font-family: ${
-              language === "hi"
-                ? "'Noto Serif Devanagari', serif"
-                : "'Source Sans 3', sans-serif"
-            };
+            font-family: ${language === "hi"
+            ? "'Noto Serif Devanagari', serif"
+            : "'Source Sans 3', sans-serif"
+          };
             box-shadow: 0 4px 15px rgba(212, 175, 55, 0.3);
             position: relative;
             overflow: hidden;
@@ -845,11 +853,10 @@ const AstroSolutions = () => {
           }
 
           .usp-card h3 {
-            font-family: ${
-              language === "hi"
-                ? "'Noto Serif Devanagari', serif"
-                : "'Playfair Display', serif"
-            };
+            font-family: ${language === "hi"
+            ? "'Noto Serif Devanagari', serif"
+            : "'Playfair Display', serif"
+          };
             font-size: 20px;
             font-weight: 700;
             color: #d4af37;
@@ -862,11 +869,10 @@ const AstroSolutions = () => {
             font-size: 14px;
             color: rgba(212, 175, 55, 0.9);
             line-height: 1.6;
-            font-family: ${
-              language === "hi"
-                ? "'Noto Serif Devanagari', serif"
-                : "'Source Sans 3', sans-serif"
-            };
+            font-family: ${language === "hi"
+            ? "'Noto Serif Devanagari', serif"
+            : "'Source Sans 3', sans-serif"
+          };
           }
 
           .usp-icon {
@@ -904,11 +910,10 @@ const AstroSolutions = () => {
           }
 
           .footer-logo {
-            font-family: ${
-              language === "hi"
-                ? "'Noto Serif Devanagari', serif"
-                : "'Playfair Display', serif"
-            };
+            font-family: ${language === "hi"
+            ? "'Noto Serif Devanagari', serif"
+            : "'Playfair Display', serif"
+          };
             font-size: 32px;
             font-weight: 700;
             color: #d4af37;
@@ -924,11 +929,10 @@ const AstroSolutions = () => {
             max-width: 600px;
             line-height: 1.6;
             text-align: center;
-            font-family: ${
-              language === "hi"
-                ? "'Noto Serif Devanagari', serif"
-                : "'Source Sans 3', sans-serif"
-            };
+            font-family: ${language === "hi"
+            ? "'Noto Serif Devanagari', serif"
+            : "'Source Sans 3', sans-serif"
+          };
           }
 
           .footer-links {
@@ -948,11 +952,10 @@ const AstroSolutions = () => {
             border-radius: 15px;
             transition: all 0.3s ease;
             min-height: 36px;
-            font-family: ${
-              language === "hi"
-                ? "'Noto Serif Devanagari', serif"
-                : "'Source Sans 3', sans-serif"
-            };
+            font-family: ${language === "hi"
+            ? "'Noto Serif Devanagari', serif"
+            : "'Source Sans 3', sans-serif"
+          };
           }
 
           .footer-links a:hover {
@@ -968,11 +971,10 @@ const AstroSolutions = () => {
             font-size: 13px;
             width: 100%;
             text-align: center;
-            font-family: ${
-              language === "hi"
-                ? "'Noto Serif Devanagari', serif"
-                : "'Source Sans 3', sans-serif"
-            };
+            font-family: ${language === "hi"
+            ? "'Noto Serif Devanagari', serif"
+            : "'Source Sans 3', sans-serif"
+          };
           }
 
           .chatbot-button {
@@ -1037,11 +1039,10 @@ const AstroSolutions = () => {
           }
 
           .chatbot-header h3 {
-            font-family: ${
-              language === "hi"
-                ? "'Noto Serif Devanagari', serif"
-                : "'Playfair Display', serif"
-            };
+            font-family: ${language === "hi"
+            ? "'Noto Serif Devanagari', serif"
+            : "'Playfair Display', serif"
+          };
             font-size: 18px;
             color: #1a2332;
             font-weight: 700;
@@ -1053,11 +1054,10 @@ const AstroSolutions = () => {
             font-size: 11px;
             color: #1a2332;
             font-style: italic;
-            font-family: ${
-              language === "hi"
-                ? "'Noto Serif Devanagari', serif"
-                : "'Source Sans 3', sans-serif"
-            };
+            font-family: ${language === "hi"
+            ? "'Noto Serif Devanagari', serif"
+            : "'Source Sans 3', sans-serif"
+          };
           }
 
           .chatbot-messages {
@@ -1075,11 +1075,10 @@ const AstroSolutions = () => {
             border-radius: 12px;
             font-size: 13px;
             line-height: 1.5;
-            font-family: ${
-              language === "hi"
-                ? "'Noto Serif Devanagari', serif"
-                : "'Source Sans 3', sans-serif"
-            };
+            font-family: ${language === "hi"
+            ? "'Noto Serif Devanagari', serif"
+            : "'Source Sans 3', sans-serif"
+          };
           }
 
           .message.user {
@@ -1118,11 +1117,10 @@ const AstroSolutions = () => {
             flex: 1;
             min-width: 90px;
             min-height: 36px;
-            font-family: ${
-              language === "hi"
-                ? "'Noto Serif Devanagari', serif"
-                : "'Source Sans 3', sans-serif"
-            };
+            font-family: ${language === "hi"
+            ? "'Noto Serif Devanagari', serif"
+            : "'Source Sans 3', sans-serif"
+          };
           }
 
           .quick-button:hover {
@@ -1148,11 +1146,10 @@ const AstroSolutions = () => {
             outline: none;
             transition: all 0.3s ease;
             min-height: 36px;
-            font-family: ${
-              language === "hi"
-                ? "'Noto Serif Devanagari', serif"
-                : "'Source Sans 3', sans-serif"
-            };
+            font-family: ${language === "hi"
+            ? "'Noto Serif Devanagari', serif"
+            : "'Source Sans 3', sans-serif"
+          };
           }
 
           .chatbot-input:focus {
@@ -1171,11 +1168,10 @@ const AstroSolutions = () => {
             transition: all 0.3s ease;
             font-weight: 600;
             min-height: 36px;
-            font-family: ${
-              language === "hi"
-                ? "'Noto Serif Devanagari', serif"
-                : "'Source Sans 3', sans-serif"
-            };
+            font-family: ${language === "hi"
+            ? "'Noto Serif Devanagari', serif"
+            : "'Source Sans 3', sans-serif"
+          };
           }
 
           .chatbot-send-button:hover {
@@ -1233,11 +1229,10 @@ const AstroSolutions = () => {
             border-radius: 8px;
             background: rgba(26, 35, 50, 0.8);
             color: #faf0e6;
-            font-family: ${
-              language === "hi"
-                ? "'Noto Serif Devanagari', serif"
-                : "'Source Sans 3', sans-serif"
-            };
+            font-family: ${language === "hi"
+            ? "'Noto Serif Devanagari', serif"
+            : "'Source Sans 3', sans-serif"
+          };
           }
 
           .modal-content .kundali-info {
@@ -1255,11 +1250,10 @@ const AstroSolutions = () => {
             border-radius: 8px;
             cursor: pointer;
             transition: all 0.3s ease;
-            font-family: ${
-              language === "hi"
-                ? "'Noto Serif Devanagari', serif"
-                : "'Source Sans 3', sans-serif"
-            };
+            font-family: ${language === "hi"
+            ? "'Noto Serif Devanagari', serif"
+            : "'Source Sans 3', sans-serif"
+          };
           }
 
           .modal-content button:hover {

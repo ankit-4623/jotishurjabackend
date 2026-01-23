@@ -75,3 +75,58 @@ export const updateOrderStatus = async (req, res) => {
     res.status(500).json({ success: false, message: "Internal Server Error" });
   }
 };
+
+// Admin: Get dashboard stats with monthly revenue
+export const getAdminStats = async (req, res) => {
+  try {
+    const { year } = req.query;
+    const targetYear = year ? parseInt(year) : new Date().getFullYear();
+
+    // Get monthly revenue aggregation
+    const monthlyRevenue = await Order.aggregate([
+      {
+        $match: {
+          createdAt: {
+            $gte: new Date(`${targetYear}-01-01`),
+            $lt: new Date(`${targetYear + 1}-01-01`)
+          }
+        }
+      },
+      {
+        $group: {
+          _id: { $month: "$createdAt" },
+          revenue: { $sum: "$totalPrice" },
+          count: { $sum: 1 }
+        }
+      },
+      { $sort: { _id: 1 } }
+    ]);
+
+    // Create array with 12 months, fill with 0 for months with no orders
+    const revenueByMonth = Array(12).fill(0);
+    monthlyRevenue.forEach(item => {
+      revenueByMonth[item._id - 1] = item.revenue;
+    });
+
+    // Get total stats
+    const totalOrders = await Order.countDocuments();
+    const pendingOrders = await Order.countDocuments({ orderStatus: "Processing" });
+    const totalEarnings = await Order.aggregate([
+      { $group: { _id: null, total: { $sum: "$totalPrice" } } }
+    ]);
+
+    res.status(200).json({
+      success: true,
+      data: {
+        monthlyRevenue: revenueByMonth,
+        totalOrders,
+        pendingOrders,
+        totalEarnings: totalEarnings[0]?.total || 0,
+        year: targetYear
+      }
+    });
+  } catch (error) {
+    console.log("Error getting admin stats:", error);
+    res.status(500).json({ success: false, message: "Internal Server Error" });
+  }
+};
