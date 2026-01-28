@@ -16,6 +16,10 @@ import Gemstone from "./gemstone";
 import AdminPanel from "./admin";
 import PujaBooking from "./pujabooking";
 import AstroSolutions from "./kundali";
+import DailyHoroscope from "./horoscope";
+import MatchMaking from "./matchmaking";
+import FreeKundali from "./freekundali";
+import Gallery from "./gallery";
 
 
 
@@ -37,6 +41,10 @@ const App = () => {
       <Route path="/gemstone" element={<Gemstone />} />
       <Route path="/puja" element={<PujaBooking />} />
       <Route path="/astro-remedies" element={<AstroSolutions />} />
+      <Route path="/horoscope" element={<DailyHoroscope />} />
+      <Route path="/matchmaking" element={<MatchMaking />} />
+      <Route path="/kundali" element={<FreeKundali />} />
+      <Route path="/gallery" element={<Gallery />} />
     </Routes>
   );
 };

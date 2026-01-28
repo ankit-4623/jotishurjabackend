@@ -25,6 +25,9 @@ import {
   getAdminAllPujaBookings,
   updatePujaBookingStatus,
   getAdminStats,
+  getGalleryMedia,
+  uploadGalleryMedia,
+  deleteGalleryMedia,
 } from "./api/api";
 
 // Register Chart.js components
@@ -50,10 +53,16 @@ const AdminPanel = () => {
     name: "",
     rate: "",
     description: "",
+    stock: "1",
+    category: "gemstone",
+    planet: "",
+    benefits: "",
     images: [],
     imageFiles: [],
   });
-  const [galleryData, setGalleryData] = useState({ photos: [], videos: [] });
+  const [galleryData, setGalleryData] = useState({ photos: [], videos: [], photoFiles: [], videoFiles: [] });
+  const [galleryItems, setGalleryItems] = useState([]);
+  const [galleryCategory, setGalleryCategory] = useState("other");
   const [isNavOpen, setIsNavOpen] = useState(false);
 
   // Logout handler
@@ -110,7 +119,7 @@ const AdminPanel = () => {
         // Fetch products (gemstones)
         const productsResponse = await getAllProducts();
         if (productsResponse.success) {
-          setProducts(productsResponse.data);
+          setProducts(productsResponse.products || []);
         }
 
         // Fetch puja bookings
@@ -123,6 +132,12 @@ const AdminPanel = () => {
         const statsResponse = await getAdminStats();
         if (statsResponse.success) {
           setAdminStats(statsResponse.data);
+        }
+
+        // Fetch gallery items
+        const galleryResponse = await getGalleryMedia();
+        if (galleryResponse.success) {
+          setGalleryItems(galleryResponse.data || []);
         }
       } catch (err) {
         console.error("Error fetching admin data:", err);
@@ -320,6 +335,7 @@ const AdminPanel = () => {
     setGalleryData({
       ...galleryData,
       [type]: [...galleryData[type], ...fileUrls],
+      [type === "photos" ? "photoFiles" : "videoFiles"]: [...(galleryData[type === "photos" ? "photoFiles" : "videoFiles"] || []), ...validFiles],
     });
   };
 
@@ -332,7 +348,14 @@ const AdminPanel = () => {
       formData.append("name", gemstoneData.name);
       formData.append("price", gemstoneData.rate);
       formData.append("description", gemstoneData.description);
-      formData.append("stock", 1); // Default stock
+      formData.append("stock", gemstoneData.stock || 1);
+      formData.append("category", gemstoneData.category || "gemstone");
+      if (gemstoneData.planet) {
+        formData.append("planet", gemstoneData.planet);
+      }
+      if (gemstoneData.benefits) {
+        formData.append("benefits", gemstoneData.benefits);
+      }
 
       // Append image files
       if (gemstoneData.imageFiles && gemstoneData.imageFiles.length > 0) {
@@ -342,19 +365,23 @@ const AdminPanel = () => {
       }
 
       const response = await addProduct(formData);
-      if (response.success) {
+      if (response.product || response.message) {
         setSuccessMessage("✅ Gemstone uploaded successfully!");
         setGemstoneData({
           name: "",
           rate: "",
           description: "",
+          stock: "1",
+          category: "gemstone",
+          planet: "",
+          benefits: "",
           images: [],
           imageFiles: [],
         });
         // Refresh products
         const productsResponse = await getAllProducts();
         if (productsResponse.success) {
-          setProducts(productsResponse.data);
+          setProducts(productsResponse.products || []);
         }
       }
     } catch (err) {
@@ -364,10 +391,54 @@ const AdminPanel = () => {
   };
 
   // Handle gallery submission
-  const handleGallerySubmit = (type) => {
-    setSuccessMessage(
-      `✅ ${type.charAt(0).toUpperCase() + type.slice(1)} uploaded successfully!`
-    );
+  const handleGallerySubmit = async (type) => {
+    try {
+      const files = type === "photos" ? galleryData.photoFiles : galleryData.videoFiles;
+      if (!files || files.length === 0) {
+        setSuccessMessage("❌ No files selected");
+        return;
+      }
+
+      const formData = new FormData();
+      files.forEach((file) => {
+        formData.append("media", file);
+      });
+      formData.append("type", type === "photos" ? "photo" : "video");
+      formData.append("category", galleryCategory);
+
+      const response = await uploadGalleryMedia(formData);
+      if (response.success) {
+        setSuccessMessage(`✅ ${type.charAt(0).toUpperCase() + type.slice(1)} uploaded successfully!`);
+        // Clear the uploaded files
+        setGalleryData({
+          ...galleryData,
+          [type]: [],
+          [type === "photos" ? "photoFiles" : "videoFiles"]: [],
+        });
+        // Refresh gallery items
+        const galleryResponse = await getGalleryMedia();
+        if (galleryResponse.success) {
+          setGalleryItems(galleryResponse.data || []);
+        }
+      }
+    } catch (err) {
+      console.error("Error uploading gallery:", err);
+      setSuccessMessage("❌ " + (err.response?.data?.message || "Failed to upload. Please try again."));
+    }
+  };
+
+  // Handle gallery item delete
+  const handleGalleryDelete = async (id) => {
+    try {
+      const response = await deleteGalleryMedia(id);
+      if (response.success) {
+        setSuccessMessage("✅ Media deleted successfully!");
+        setGalleryItems(galleryItems.filter(item => item._id !== id));
+      }
+    } catch (err) {
+      console.error("Error deleting gallery item:", err);
+      setSuccessMessage("❌ Failed to delete media");
+    }
   };
 
   // Download dashboard as PDF
@@ -1585,6 +1656,7 @@ const AdminPanel = () => {
                       <option value="all">All</option>
                       <option value="pending">Pending</option>
                       <option value="accepted">Accepted</option>
+                      <option value="completed">Completed</option>
                       <option value="rejected">Rejected</option>
                     </select>
                   </div>
@@ -1598,11 +1670,12 @@ const AdminPanel = () => {
                       <thead>
                         <tr>
                           <th>Name</th>
+                          <th>Email</th>
                           <th>DOB</th>
                           <th>Birth Time</th>
                           <th>Birth Place</th>
                           <th>Type</th>
-                          <th>Area of Concern</th>
+                          <th>Description</th>
                           <th>Price</th>
                           <th>Status</th>
                           <th>Change Status</th>
@@ -1611,13 +1684,14 @@ const AdminPanel = () => {
                       <tbody>
                         {filteredConsultancies.map((consult) => (
                           <tr key={consult._id}>
-                            <td>{consult.fulllName}</td>
-                            <td>{consult.dateofBirth ? new Date(consult.dateofBirth).toLocaleDateString() : 'N/A'}</td>
-                            <td>{consult.timeofBirth}</td>
-                            <td>{consult.placeofBirth}</td>
-                            <td>{consult.type}</td>
-                            <td>{consult.areaOfConcern}</td>
-                            <td>₹{consult.price}</td>
+                            <td>{consult.name || consult.userId?.name || 'N/A'}</td>
+                            <td>{consult.email || consult.userId?.email || 'N/A'}</td>
+                            <td>{consult.dob || 'N/A'}</td>
+                            <td>{consult.birthTime || 'N/A'}</td>
+                            <td>{consult.birthPlace || 'N/A'}</td>
+                            <td>{consult.consultancyType || 'N/A'}</td>
+                            <td>{consult.description || 'N/A'}</td>
+                            <td>₹{consult.price || 0}</td>
                             <td>{consult.status}</td>
                             <td>
                               <select
@@ -1626,6 +1700,7 @@ const AdminPanel = () => {
                               >
                                 <option value="pending">Pending</option>
                                 <option value="accepted">Accepted</option>
+                                <option value="completed">Completed</option>
                                 <option value="rejected">Rejected</option>
                               </select>
                             </td>
@@ -1638,25 +1713,28 @@ const AdminPanel = () => {
                         <div key={consult._id} className="table-card">
                           <h4>Request #{consult._id?.slice(-6)}</h4>
                           <p>
-                            <strong>Name:</strong> {consult.fulllName}
+                            <strong>Name:</strong> {consult.name || consult.userId?.name || 'N/A'}
                           </p>
                           <p>
-                            <strong>DOB:</strong> {consult.dateofBirth ? new Date(consult.dateofBirth).toLocaleDateString() : 'N/A'}
+                            <strong>Email:</strong> {consult.email || consult.userId?.email || 'N/A'}
                           </p>
                           <p>
-                            <strong>Birth Time:</strong> {consult.timeofBirth}
+                            <strong>DOB:</strong> {consult.dob || 'N/A'}
                           </p>
                           <p>
-                            <strong>Birth Place:</strong> {consult.placeofBirth}
+                            <strong>Birth Time:</strong> {consult.birthTime || 'N/A'}
                           </p>
                           <p>
-                            <strong>Type:</strong> {consult.type}
+                            <strong>Birth Place:</strong> {consult.birthPlace || 'N/A'}
                           </p>
                           <p>
-                            <strong>Concern:</strong> {consult.areaOfConcern}
+                            <strong>Type:</strong> {consult.consultancyType || 'N/A'}
                           </p>
                           <p>
-                            <strong>Price:</strong> ₹{consult.price}
+                            <strong>Description:</strong> {consult.description || 'N/A'}
+                          </p>
+                          <p>
+                            <strong>Price:</strong> ₹{consult.price || 0}
                           </p>
                           <p>
                             <strong>Status:</strong> {consult.status}
@@ -1667,6 +1745,7 @@ const AdminPanel = () => {
                           >
                             <option value="pending">Pending</option>
                             <option value="accepted">Accepted</option>
+                            <option value="completed">Completed</option>
                             <option value="rejected">Rejected</option>
                           </select>
                         </div>
@@ -1704,9 +1783,12 @@ const AdminPanel = () => {
                       <thead>
                         <tr>
                           <th>ID</th>
-                          <th>Puja Name</th>
-                          <th>Customer</th>
-                          <th>Price</th>
+                          <th>Customer Name</th>
+                          <th>Email</th>
+                          <th>Phone</th>
+                          <th>Puja Type</th>
+                          <th>Mode</th>
+                          <th>Description</th>
                           <th>Date</th>
                           <th>Status</th>
                           <th>Change Status</th>
@@ -1716,10 +1798,13 @@ const AdminPanel = () => {
                         {filteredPujaBookings.map((puja) => (
                           <tr key={puja._id}>
                             <td>{puja._id?.slice(-6)}</td>
-                            <td>{puja.pujaName}</td>
-                            <td>{puja.customerName || puja.user?.name || 'N/A'}</td>
-                            <td>₹{puja.price || 0}</td>
-                            <td>{puja.scheduledDate ? new Date(puja.scheduledDate).toLocaleDateString() : 'N/A'}</td>
+                            <td>{puja.name || puja.user?.name || 'N/A'}</td>
+                            <td>{puja.email || puja.user?.email || 'N/A'}</td>
+                            <td>{puja.phone || 'N/A'}</td>
+                            <td>{puja.pujaType || 'N/A'}</td>
+                            <td>{puja.mode || 'online'}</td>
+                            <td>{puja.description || 'N/A'}</td>
+                            <td>{puja.createdAt ? new Date(puja.createdAt).toLocaleDateString() : 'N/A'}</td>
                             <td>{puja.status}</td>
                             <td>
                               <select
@@ -1741,16 +1826,22 @@ const AdminPanel = () => {
                         <div key={puja._id} className="table-card">
                           <h4>Puja #{puja._id?.slice(-6)}</h4>
                           <p>
-                            <strong>Name:</strong> {puja.pujaName}
+                            <strong>Customer:</strong> {puja.name || puja.user?.name || 'N/A'}
                           </p>
                           <p>
-                            <strong>Customer:</strong> {puja.customerName || puja.user?.name || 'N/A'}
+                            <strong>Email:</strong> {puja.email || puja.user?.email || 'N/A'}
                           </p>
                           <p>
-                            <strong>Price:</strong> ₹{puja.price || 0}
+                            <strong>Phone:</strong> {puja.phone || 'N/A'}
                           </p>
                           <p>
-                            <strong>Date:</strong> {puja.scheduledDate ? new Date(puja.scheduledDate).toLocaleDateString() : 'N/A'}
+                            <strong>Puja Type:</strong> {puja.pujaType || 'N/A'}
+                          </p>
+                          <p>
+                            <strong>Mode:</strong> {puja.mode || 'online'}
+                          </p>
+                          <p>
+                            <strong>Date:</strong> {puja.createdAt ? new Date(puja.createdAt).toLocaleDateString() : 'N/A'}
                           </p>
                           <p>
                             <strong>Status:</strong> {puja.status}
@@ -1788,7 +1879,7 @@ const AdminPanel = () => {
                     />
                   </div>
                   <div className="form-group">
-                    <label>Rate ($)</label>
+                    <label>Rate (₹)</label>
                     <input
                       type="number"
                       name="rate"
@@ -1796,6 +1887,60 @@ const AdminPanel = () => {
                       onChange={handleGemstoneChange}
                       placeholder="Enter rate"
                       required
+                    />
+                  </div>
+                  <div className="form-group">
+                    <label>Stock</label>
+                    <input
+                      type="number"
+                      name="stock"
+                      value={gemstoneData.stock}
+                      onChange={handleGemstoneChange}
+                      placeholder="Enter stock quantity"
+                      required
+                    />
+                  </div>
+                  <div className="form-group">
+                    <label>Category</label>
+                    <select
+                      name="category"
+                      value={gemstoneData.category}
+                      onChange={handleGemstoneChange}
+                      required
+                    >
+                      <option value="gemstone">Gemstone</option>
+                      <option value="rudraksha">Rudraksha</option>
+                      <option value="yantra">Yantra</option>
+                      <option value="bracelet">Bracelet</option>
+                      <option value="other">Other</option>
+                    </select>
+                  </div>
+                  <div className="form-group">
+                    <label>Planet (Optional)</label>
+                    <select
+                      name="planet"
+                      value={gemstoneData.planet}
+                      onChange={handleGemstoneChange}
+                    >
+                      <option value="">Select Planet</option>
+                      <option value="Sun">Sun</option>
+                      <option value="Moon">Moon</option>
+                      <option value="Mars">Mars</option>
+                      <option value="Mercury">Mercury</option>
+                      <option value="Jupiter">Jupiter</option>
+                      <option value="Venus">Venus</option>
+                      <option value="Saturn">Saturn</option>
+                      <option value="Rahu">Rahu</option>
+                      <option value="Ketu">Ketu</option>
+                    </select>
+                  </div>
+                  <div className="form-group">
+                    <label>Benefits (Optional)</label>
+                    <textarea
+                      name="benefits"
+                      value={gemstoneData.benefits}
+                      onChange={handleGemstoneChange}
+                      placeholder="Enter benefits of this gemstone"
                     />
                   </div>
                   <div className="form-group">
@@ -1837,7 +1982,23 @@ const AdminPanel = () => {
 
             {currentTab === "gallery" && (
               <div className="gallery-form">
-                <h3>Gallery</h3>
+                <h3>Gallery Management</h3>
+                
+                {/* Category Selection */}
+                <div className="form-group">
+                  <label>Category</label>
+                  <select
+                    value={galleryCategory}
+                    onChange={(e) => setGalleryCategory(e.target.value)}
+                  >
+                    <option value="event">Event</option>
+                    <option value="puja">Puja</option>
+                    <option value="gemstone">Gemstone</option>
+                    <option value="other">Other</option>
+                  </select>
+                </div>
+
+                {/* Photo Upload */}
                 <div className="form-group">
                   <label>Upload Photos</label>
                   <input
@@ -1854,11 +2015,13 @@ const AdminPanel = () => {
                     Submit Photos
                   </button>
                 </div>
+
+                {/* Video Upload */}
                 <div className="form-group">
                   <label>Upload Videos</label>
                   <input
                     type="file"
-                    accept="video/mp4,video/webm"
+                    accept="video/mp4,video/webm,video/mov"
                     multiple
                     onChange={(e) => handleGalleryUpload(e, "videos")}
                   />
@@ -1870,10 +2033,12 @@ const AdminPanel = () => {
                     Submit Videos
                   </button>
                 </div>
+
+                {/* Preview Section */}
                 {(galleryData.photos.length > 0 ||
                   galleryData.videos.length > 0) && (
                     <div className="gallery-preview">
-                      <h4>Preview</h4>
+                      <h4>Upload Preview</h4>
                       <div className="image-preview">
                         {galleryData.photos.map((url, index) => (
                           <img
@@ -1883,13 +2048,68 @@ const AdminPanel = () => {
                           />
                         ))}
                         {galleryData.videos.map((url, index) => (
-                          <video key={`video-${index}`} controls>
+                          <video key={`video-${index}`} controls style={{maxWidth: '200px'}}>
                             <source src={url} type="video/mp4" />
                           </video>
                         ))}
                       </div>
                     </div>
                   )}
+
+                {/* Existing Gallery Items */}
+                <div className="existing-gallery" style={{marginTop: '30px'}}>
+                  <h4>Uploaded Gallery ({galleryItems.length} items)</h4>
+                  <div className="gallery-grid" style={{
+                    display: 'grid',
+                    gridTemplateColumns: 'repeat(auto-fill, minmax(150px, 1fr))',
+                    gap: '15px',
+                    marginTop: '15px'
+                  }}>
+                    {galleryItems.map((item) => (
+                      <div key={item._id} className="gallery-item" style={{
+                        position: 'relative',
+                        borderRadius: '8px',
+                        overflow: 'hidden',
+                        border: '1px solid #ddd'
+                      }}>
+                        {item.type === 'photo' ? (
+                          <img 
+                            src={item.url} 
+                            alt={item.title || 'Gallery'} 
+                            style={{width: '100%', height: '120px', objectFit: 'cover'}}
+                          />
+                        ) : (
+                          <video style={{width: '100%', height: '120px', objectFit: 'cover'}}>
+                            <source src={item.url} type="video/mp4" />
+                          </video>
+                        )}
+                        <div style={{
+                          padding: '8px',
+                          background: '#f5f5f5',
+                          display: 'flex',
+                          justifyContent: 'space-between',
+                          alignItems: 'center'
+                        }}>
+                          <span style={{fontSize: '12px', color: '#666'}}>{item.category}</span>
+                          <button 
+                            onClick={() => handleGalleryDelete(item._id)}
+                            style={{
+                              background: '#e74c3c',
+                              color: 'white',
+                              border: 'none',
+                              padding: '4px 8px',
+                              borderRadius: '4px',
+                              cursor: 'pointer',
+                              fontSize: '11px'
+                            }}
+                          >
+                            Delete
+                          </button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
               </div>
             )}
           </div>

@@ -1,11 +1,11 @@
 import express from "express";
-import { dailyhoroscope, matchmaking } from "../controllers/serviceControllers.js";
+import { dailyhoroscope, matchmaking, freekundli } from "../controllers/serviceControllers.js";
 import { verifyUserAuth } from "../middlewares/userAuth.js";
 
 const serviceRoute = express.Router()
 
-serviceRoute.get('/dailyhoroscope',verifyUserAuth, dailyhoroscope);
+serviceRoute.get('/dailyhoroscope', verifyUserAuth, dailyhoroscope);
 serviceRoute.post('/matchmaking', verifyUserAuth, matchmaking);
-// serviceRoute.get('/freekundli', verifyUserAuth, freekundli);
+serviceRoute.post('/freekundli', verifyUserAuth, freekundli);
 
 export default serviceRoute;

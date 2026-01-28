@@ -180,13 +180,18 @@ export const getAdminAllConsultancyRequests = async () => {
 };
 
 // ==================== Service APIs ====================
-export const getDailyHoroscope = async () => {
-    const response = await api.get("/services/dailyhoroscope");
+export const getDailyHoroscope = async (sign) => {
+    const response = await api.get(`/services/dailyhoroscope?sign=${sign}`);
     return response.data;
 };
 
 export const matchmaking = async (matchData) => {
     const response = await api.post("/services/matchmaking", matchData);
+    return response.data;
+};
+
+export const getFreeKundali = async (kundaliData) => {
+    const response = await api.post("/services/freekundli", kundaliData);
     return response.data;
 };
 
@@ -232,6 +237,29 @@ export const createPaymentOrder = async (amount) => {
 
 export const verifyPayment = async (paymentData) => {
     const response = await api.post("/payment/verify", paymentData);
+    return response.data;
+};
+
+// ==================== Gallery APIs ====================
+export const getGalleryMedia = async (type = "all", category = "all") => {
+    const params = new URLSearchParams();
+    if (type !== "all") params.append("type", type);
+    if (category !== "all") params.append("category", category);
+    const response = await api.get(`/gallery?${params.toString()}`);
+    return response.data;
+};
+
+export const uploadGalleryMedia = async (formData) => {
+    const response = await api.post("/gallery/upload", formData, {
+        headers: {
+            "Content-Type": "multipart/form-data",
+        },
+    });
+    return response.data;
+};
+
+export const deleteGalleryMedia = async (id) => {
+    const response = await api.delete(`/gallery/${id}`);
     return response.data;
 };
 

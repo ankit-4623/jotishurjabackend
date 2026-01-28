@@ -16,6 +16,7 @@ import pujaBookingRoute from "./route/pujaBookingRoute.js";
 import { rateLimitmiddleware } from "./middlewares/rateLimit.js";
 import serviceRoute from "./route/serviceroute.js";
 import paymentRoute from './route/paymentRoute.js'
+import galleryRoute from './route/galleryRoute.js'
 
 // Get the directory name for ES modules
 const __filename = fileURLToPath(import.meta.url);
@@ -46,6 +47,7 @@ app.use("/api/payment", paymentRoute);
 app.use('/api/consultancy', consultancyRoute)
 app.use('/api/puja', pujaBookingRoute)
 app.use('/api/services', serviceRoute)
+app.use('/api/gallery', galleryRoute)
 
 
 app.listen(PORT, () => {
