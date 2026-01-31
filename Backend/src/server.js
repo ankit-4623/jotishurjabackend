@@ -26,13 +26,14 @@ const app = express();
 const PORT = process.env.PORT;
 
 //middlewares
+app.set("trust proxy", 1);
 app.use(cookieParser());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
 // app.use(rateLimitmiddleware);
 app.use(cors({
-  origin: process.env.CLIENT_URL,
+  origin: "http://localhost:5173",
   credentials: true
 }));
 

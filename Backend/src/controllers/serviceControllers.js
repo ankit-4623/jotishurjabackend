@@ -83,7 +83,7 @@ export const freekundli = async (req, res) => {
         hours: hour,
         minutes: minute,
         seconds: 0,
-        latitude: 28.6139, // Default to Delhi, can be improved with geocoding
+        latitude: 28.6139, 
         longitude: 77.2090,
         timezone: 5.5,
         settings: {
